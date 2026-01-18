@@ -12,6 +12,7 @@ const gamemodeSelect = document.getElementById("gamemode");
 
 // Sidebar
 const tooltip = document.getElementById("target-tooltip");
+const homeBtn = document.getElementById("home-btn");
 
 // Win
 const winModal = document.getElementById("win-modal");
@@ -161,6 +162,15 @@ newRoundBtn.addEventListener("click", () => {
     gameState.history = [];
     startModal.style.display = "flex";
 })
+
+homeBtn.addEventListener("click", () => {
+    gameState.clicks = 0;
+    gameState.history = [];
+    clickCounterEl.textContent = 0;
+
+    winModal.classList.add("hidden");
+    startModal.style.display = "flex";
+});
 
 
 // Start
