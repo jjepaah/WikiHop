@@ -16,6 +16,7 @@ const tooltip = document.getElementById("target-tooltip");
 // Win
 const winModal = document.getElementById("win-modal");
 const finalClicksEl = document.getElementById("final-clicks");
+const finalTimeEl = document.getElementById("final-time");
 const newRoundBtn = document.getElementById("new-round-btn");
 
 const gameState = {
@@ -24,6 +25,10 @@ const gameState = {
     clicks: 0,
     currentPage: null,
     history: [],
+    mode: "set",
+
+    startTime: null,
+    endTime: null
 };
 
 startPageEl.textContent = gameState.startPage;
@@ -55,10 +60,24 @@ async function checkWin() {
         finalClicksEl.textContent = gameState.clicks;
         winModal.classList.remove("hidden");
         disableAllLinks();
+        
+        gameState.endTime = Date.now();
+
+        const runTimeMs = gameState.endTime - gameState.startTime;
+        const runTimeSeconds = Math.round(runTimeMs / 1000);
+
+        finalTimeEl.textContent = `${runTimeSeconds} seconds`;
 
         if (gameState.mode === "random") {
+
             const player = prompt("Enter your name for the leaderboard:") || "Anonymous";
-            await saveRandomScore(player, gameState.clicks);
+            await saveRandomScore({
+                player,
+                clicks: gameState.clicks,
+                startPage: gameState.startPage,
+                targetPage: gameState.targetPage,
+                timeMs: runTimeMs
+            });
 
             const leaderboard = await getRandomLeaderboard();
             console.log("Top 10 scores:", leaderboard);
@@ -103,6 +122,9 @@ startForm.addEventListener("submit", async e => {
     if (mode === "time") startTimer(360);
 
     updateSidebar();
+    gameState.startTime = Date.now();
+    gameState.endTime = null;
+
     loadPage(gameState.startPage, false);
 });
 
@@ -137,7 +159,7 @@ newRoundBtn.addEventListener("click", () => {
     gameState.clicks = 0;
     clickCounterEl.textContent = 0;
     gameState.history = [];
-    loadPage(gameState.startPage, false);
+    startModal.style.display = "flex";
 })
 
 

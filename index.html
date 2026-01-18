@@ -57,6 +57,7 @@
         <div id="win-box">
             <h2>You reached the target!</h2>
             <p>Clicks: <span id="final-clicks">0</span></p>
+            <p>Time: <span id="final-time">0</span></p>
             <button id="new-round-btn">Start New Round</button>
         </div>
     </div>
@@ -79,10 +80,19 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    window.saveRandomScore = async function(player, clicks) {
+    window.saveRandomScore = async function({
+        player,
+        clicks,
+        timeMs,
+        startPage,
+        targetPage
+    }) {
         await addDoc(collection(db, "leaderboard_random"), {
         player,
         clicks,
+        timeMs,
+        startPage,
+        targetPage,
         date: new Date()
         });
     }
