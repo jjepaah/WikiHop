@@ -8,6 +8,7 @@ const startPageInput = document.getElementById("start-menu");
 const targetPageInput = document.getElementById("target-menu");
 const startForm = document.getElementById("start-form");
 const langSelect = document.getElementById("wiki-lang");
+const gamemodeSelect = document.getElementById("gamemode");
 
 // Sidebar
 const tooltip = document.getElementById("target-tooltip");
@@ -49,11 +50,19 @@ async function loadPage(title, isUserClick = true) {
     checkWin();
 }
 
-function checkWin() {
+async function checkWin() {
     if (gameState.currentPage === gameState.targetPage) {
         finalClicksEl.textContent = gameState.clicks;
         winModal.classList.remove("hidden");
         disableAllLinks();
+
+        if (gameState.mode === "random") {
+            const player = prompt("Enter your name for the leaderboard:") || "Anonymous";
+            await saveRandomScore(player, gameState.clicks);
+
+            const leaderboard = await getRandomLeaderboard();
+            console.log("Top 10 scores:", leaderboard);
+        }
     }
 }
 
@@ -68,16 +77,19 @@ function disableAllLinks() {
 startForm.addEventListener("submit", async e => {
     e.preventDefault();
 
+    const mode = gamemodeSelect.value;
+    gameState.mode = mode;
+
     setWikiLang(langSelect.value);
 
     let start = startPageInput.value.trim();
     let target = targetPageInput.value.trim();
 
-    if (!start) start = await getRandomPageTitle();
-    if (!target) target = await getRandomPageTitle();
+    if (mode === "random" | !start) start = await getRandomPageTitle();
+    if (mode === "random" | !target) target = await getRandomPageTitle();
 
     while (target === start) {
-        target = getRandomPageTitle();
+        target = await getRandomPageTitle();
     }
 
     gameState.startPage = start;
@@ -87,6 +99,9 @@ startForm.addEventListener("submit", async e => {
     gameState.history = [];
 
     startModal.style.display = "none";
+
+    if (mode === "time") startTimer(360);
+
     updateSidebar();
     loadPage(gameState.startPage, false);
 });
