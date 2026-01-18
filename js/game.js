@@ -62,28 +62,6 @@ function disableAllLinks() {
 }
 
 // Main menu start button
-/*
-startGameBtn.addEventListener("click", () => {
-    const start = startPageInput.value;
-    const target = targetPageInput.value;
-
-    if (!start || !target){
-        alert("Enter both start and target pages!");
-        return;
-    }
-
-    gameState.startPage = start;
-    gameState.targetPage = target;
-    gameState.clicks = 0;
-    clickCounterEl.textContent = 0;
-    gameState.history = [];
-
-    startModal.style.display = "none";
-
-    loadPage(gameState.startPage, false);
-})
-*/
-
 startForm.addEventListener("submit", e => {
     e.preventDefault();
 
