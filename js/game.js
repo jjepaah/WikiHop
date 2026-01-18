@@ -9,6 +9,9 @@ const targetPageInput = document.getElementById("target-menu");
 const startForm = document.getElementById("start-form");
 const langSelect = document.getElementById("wiki-lang");
 
+// Sidebar
+const tooltip = document.getElementById("target-tooltip");
+
 // Win
 const winModal = document.getElementById("win-modal");
 const finalClicksEl = document.getElementById("final-clicks");
@@ -88,6 +91,29 @@ startForm.addEventListener("submit", async e => {
     loadPage(gameState.startPage, false);
 });
 
+let tooltipTimeout;
+
+targetPageEl.addEventListener("mouseenter", async () => {
+    tooltipTimeout = setTimeout(async () => {
+        const firstParagraph = await fetchFirstParagraph(gameState.targetPage);
+        console.log("Fetched paragraph:", firstParagraph);
+        
+        tooltip.textContent = firstParagraph;
+
+        const rect = targetPageEl.getBoundingClientRect();
+        tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
+        tooltip.style.left = `${rect.left + window.scrollX}px`;
+
+        tooltip.classList.add("visible");
+        tooltip.classList.remove("hidden");
+    }, 200);
+});
+
+targetPageEl.addEventListener("mouseleave", () => {
+    clearTimeout(tooltipTimeout);
+    tooltip.classList.remove("visible");
+    tooltip.classList.add("hidden");
+})
 
 // Win screen button
 newRoundBtn.addEventListener("click", () => {

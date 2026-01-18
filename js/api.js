@@ -58,3 +58,29 @@ async function getRandomPageTitle() {
 
     return page.title;
 }
+
+async function fetchFirstParagraph(title) {
+    const params = new URLSearchParams({
+        action: "parse",
+        page: title,
+        prop: "text",
+        section: 0,
+        format: "json",
+        origin: "*"
+    });
+
+    const res = await fetch(`https://${WIKI_LANG}.wikipedia.org/w/api.php?${params}`);
+    const data = await res.json();
+
+    if (!data.parse || !data.parse.text) return "No preview available.";
+
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = data.parse.text["*"];
+
+    const firstP = tempDiv.querySelector("p");
+    if (!firstP) return "No preview available.";
+
+    firstP.querySelectorAll("style, .IPA").forEach(el => el.remove());
+
+    return firstP.textContent.trim();
+}
