@@ -29,7 +29,7 @@ function renderPage(page) {
             link.getAttribute("href").replace("/wiki/", "")
             );
 
-            loadPage(title);
+            loadPage(title, true);
         });
     });
 }

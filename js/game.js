@@ -14,9 +14,17 @@ startPageEl.textContent = gameState.startPage;
 targetPageEl.textContent = gameState.targetPage;
 clickCounterEl.textContent = gameState.clicks;
 
-async function loadPage(title) {
-  const page = await fetchPage(title);
-  renderPageWithTransition(page);
+async function loadPage(title, isUserClick = true) {
+    if (isUserClick) {
+        gameState.clicks++;
+        clickCounterEl.textContent = gameState.clicks;
+    }
+
+    const page = await fetchPage(title);
+    gameState.currentPage = page.title;
+    gameState.history.push(page.title);
+
+    renderPageWithTransition(page);
 }
 
 // Start here
