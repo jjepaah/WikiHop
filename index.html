@@ -2,11 +2,21 @@
     <meta charset="UTF-8" />
     <title>WikiHop</title>
     <link rel="stylesheet" href="css/style.css" />
-    <header>
-        <h1 id="page-title">Loading…</h1>
-    </header>
 
-    <main id="content"></main>
+    <div id="game-container">
+        <aside id="sidebar">
+            <h2></h2>
+            <p><strong>Clicks:</strong> <span id="click-counter">0</span></p>
+            <p><strong>Start:</strong> <span id="start-page">Loading...</span></p>
+            <p><strong>Target:</strong> <span id="target-page">Loading...</span></p>
+        </aside>
+        <main id="main-content">
+            <header>
+                <h1 id="page-title">Loading...</h1>
+            </header>
+            <div id="content"></div>
+        </main>
+    </div>
 
     <script src="js/api.js"></script>
     <script src="js/ui.js"></script>
