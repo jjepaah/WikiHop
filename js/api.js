@@ -39,15 +39,22 @@ async function fetchPage(title) {
 }
 
 async function getRandomPageTitle() {
-    const params = new URLSearchParams({
-        action: "query",
-        list: "random",
-        rnlimit: 1,
-        format: "json",
-        origin: "*"
-    });
+    let page;
+    do {
+        const params = new URLSearchParams({
+            action: "query",
+            list: "random",
+            rnnamespace: 0,
+            rnlimit: 1,
+            format: "json",
+            origin: "*"
+        });
 
-    const res = await fetch(`${getWikiApi()}?${params}`);
-    const data = await res.json();
-    return data.query.random[0].title;
+        const res = await fetch(`${getWikiApi()}?${params}`);
+        const data = await res.json();
+        page = data.query.random[0];
+        
+    } while (!page || !page.title);
+
+    return page.title;
 }

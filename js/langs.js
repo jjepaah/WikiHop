@@ -2,8 +2,8 @@ const LANG_TEXTS = {
     en: {
         sidebar: {
             clicks: "Clicks:",
-            start: "Start Page",
-            target: "Target Page",
+            start: "Start Page:",
+            target: "Target Page:",
         },
         winModal: {
             title: "You Win!",
@@ -13,8 +13,8 @@ const LANG_TEXTS = {
     fi: {
         sidebar: {
             clicks: "Klikit:",
-            start: "Alku",
-            target: "Kohde",
+            start: "Alku:",
+            target: "Kohde:",
         },
         winModal: {
             title: "Voitit!",
@@ -24,8 +24,8 @@ const LANG_TEXTS = {
     de: {
         sidebar: {
             clicks: "Klicks:",
-            start: "Startseite",
-            target: "Zielseite",
+            start: "Startseite:",
+            target: "Zielseite:",
         },
         winModal: {
             title: "Du hast gewonnen!",
@@ -35,8 +35,8 @@ const LANG_TEXTS = {
     sv: {
         sidebar: {
             clicks: "Klick:",
-            start: "Start",
-            target: "Mål",
+            start: "Start:",
+            target: "Mål:",
         },
         winModal: {
             title: "Du vann!",
