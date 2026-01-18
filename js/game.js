@@ -62,17 +62,19 @@ function disableAllLinks() {
 }
 
 // Main menu start button
-startForm.addEventListener("submit", e => {
+startForm.addEventListener("submit", async e => {
     e.preventDefault();
 
     setWikiLang(langSelect.value);
 
-    const start = startPageInput.value.trim();
-    const target = targetPageInput.value.trim();
+    let start = startPageInput.value.trim();
+    let target = targetPageInput.value.trim();
 
-    if (!start || !target) {
-        alert("Enter both start and target pages!");
-        return;
+    if (!start) start = await getRandomPageTitle();
+    if (!target) target = await getRandomPageTitle();
+
+    while (target === start) {
+        target = getRandomPageTitle();
     }
 
     gameState.startPage = start;
