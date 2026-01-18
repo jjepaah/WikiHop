@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <body>
     <meta charset="UTF-8" />
     <title>WikiHop</title>
@@ -16,6 +17,24 @@
             </header>
             <div id="content"></div>
         </main>
+    </div>
+
+    <div id="start-modal">
+        <div id="start-box">
+            <h2>WikiHop</h2>
+            <p>Choose your start and target pages</p>
+
+            <form id="start-form">
+                <label for="start-menu">Start Page:</label>
+                <br>
+                <input type="text" id="start-menu" placeholder="e.g., Finland" />
+                <br>
+                <label for="target-menu">Target Page:</label>
+                <input type="text" id="target-menu" placeholder="e.g., Pakkala" />
+
+                <button id="start-game-btn">Start game</button>
+            </form>
+        </div>
     </div>
 
     <div id="win-modal" class="hidden">

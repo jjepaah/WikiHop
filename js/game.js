@@ -2,13 +2,20 @@ const clickCounterEl = document.getElementById("click-counter");
 const startPageEl = document.getElementById("start-page");
 const targetPageEl = document.getElementById("target-page");
 
+// Main menu
+const startModal = document.getElementById("start-modal");
+const startPageInput = document.getElementById("start-menu");
+const targetPageInput = document.getElementById("target-menu");
+const startGameBtn = document.getElementById("start-game-btn");
+
+// Win
 const winModal = document.getElementById("win-modal");
 const finalClicksEl = document.getElementById("final-clicks");
 const newRoundBtn = document.getElementById("new-round-btn");
 
 const gameState = {
     startPage: "Finland",
-    targetPage: "Nikkilä",
+    targetPage: "Pakkala",
     clicks: 0,
     currentPage: null,
     history: [],
@@ -18,8 +25,6 @@ startPageEl.textContent = gameState.startPage;
 targetPageEl.textContent = gameState.targetPage;
 clickCounterEl.textContent = gameState.clicks;
 
-
-
 async function loadPage(title, isUserClick = true) {
     if (isUserClick) {
         gameState.clicks++;
@@ -27,6 +32,10 @@ async function loadPage(title, isUserClick = true) {
 
         gameState.history.push(title);
     }
+
+    startPageEl.textContent = gameState.startPage;
+    targetPageEl.textContent = gameState.targetPage;
+    clickCounterEl.textContent = gameState.clicks;
 
     const page = await fetchPage(title);
     gameState.currentPage = page.title;
@@ -51,6 +60,28 @@ function disableAllLinks() {
     });
 }
 
+// Main menu start button
+startGameBtn.addEventListener("click", () => {
+    const start = startPageInput.value;
+    const target = targetPageInput.value;
+
+    if (!start || !target){
+        alert("Enter both start and target pages!");
+        return;
+    }
+
+    gameState.startPage = start;
+    gameState.targetPage = target;
+    gameState.clicks = 0;
+    clickCounterEl.textContent = 0;
+    gameState.history = [];
+
+    startModal.style.display = "none";
+
+    loadPage(gameState.startPage, false);
+})
+
+// Win screen button
 newRoundBtn.addEventListener("click", () => {
     winModal.classList.add("hidden");
 
@@ -62,4 +93,5 @@ newRoundBtn.addEventListener("click", () => {
 
 
 // Start here
+startModal.style.display = "flex";
 loadPage(gameState.startPage, false);
