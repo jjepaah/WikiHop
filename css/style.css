@@ -122,3 +122,48 @@ a:hover {
 p, li, table {
     color: #e0e0e0;
 }
+
+/* Win overlay */
+#win-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    backdrop-filter: blur(5px);
+    background-color: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    transition: opacity 0.3s ease;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#win-box {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    padding: 2rem;
+    border-radius: 12px;
+    text-align: center;
+    min-width: 300px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.7);
+}
+
+#win-box button {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    background-color: #90caf9;
+    color: #121212;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#win-box button:hover {
+    background-color: #64b5f6;
+}

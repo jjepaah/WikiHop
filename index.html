@@ -5,7 +5,7 @@
 
     <div id="game-container">
         <aside id="sidebar">
-            <h2></h2>
+            <h2>WikiHop</h2>
             <p><strong>Clicks:</strong> <span id="click-counter">0</span></p>
             <p><strong>Start:</strong> <span id="start-page">Loading...</span></p>
             <p><strong>Target:</strong> <span id="target-page">Loading...</span></p>
@@ -16,6 +16,14 @@
             </header>
             <div id="content"></div>
         </main>
+    </div>
+
+    <div id="win-modal" class="hidden">
+        <div id="win-box">
+            <h2>You reached the target!</h2>
+            <p>Clicks: <span id="final-clicks">0</span></p>
+            <button id="new-round-btn">Start New Round</button>
+        </div>
     </div>
 
     <script src="js/api.js"></script>
