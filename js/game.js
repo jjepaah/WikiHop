@@ -7,6 +7,7 @@ const startModal = document.getElementById("start-modal");
 const startPageInput = document.getElementById("start-menu");
 const targetPageInput = document.getElementById("target-menu");
 const startGameBtn = document.getElementById("start-game-btn");
+const startForm = document.getElementById("start-form");
 
 // Win
 const winModal = document.getElementById("win-modal");
@@ -61,6 +62,7 @@ function disableAllLinks() {
 }
 
 // Main menu start button
+/*
 startGameBtn.addEventListener("click", () => {
     const start = startPageInput.value;
     const target = targetPageInput.value;
@@ -80,6 +82,29 @@ startGameBtn.addEventListener("click", () => {
 
     loadPage(gameState.startPage, false);
 })
+*/
+
+startForm.addEventListener("submit", e => {
+    e.preventDefault();
+
+    const start = startPageInput.value.trim();
+    const target = targetPageInput.value.trim();
+
+    if (!start || !target) {
+        alert("Enter both start and target pages!");
+        return;
+    }
+
+    gameState.startPage = start;
+    gameState.targetPage = target;
+    gameState.clicks = 0;
+    clickCounterEl.textContent = 0;
+    gameState.history = [];
+
+    startModal.style.display = "none";
+    loadPage(gameState.startPage, false);
+});
+
 
 // Win screen button
 newRoundBtn.addEventListener("click", () => {
