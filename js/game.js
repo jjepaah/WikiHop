@@ -6,8 +6,8 @@ const targetPageEl = document.getElementById("target-page");
 const startModal = document.getElementById("start-modal");
 const startPageInput = document.getElementById("start-menu");
 const targetPageInput = document.getElementById("target-menu");
-const startGameBtn = document.getElementById("start-game-btn");
 const startForm = document.getElementById("start-form");
+const langSelect = document.getElementById("wiki-lang");
 
 // Win
 const winModal = document.getElementById("win-modal");
@@ -65,6 +65,8 @@ function disableAllLinks() {
 startForm.addEventListener("submit", e => {
     e.preventDefault();
 
+    setWikiLang(langSelect.value);
+
     const start = startPageInput.value.trim();
     const target = targetPageInput.value.trim();
 
@@ -95,6 +97,6 @@ newRoundBtn.addEventListener("click", () => {
 })
 
 
-// Start here
+// Start
 startModal.style.display = "flex";
 loadPage(gameState.startPage, false);

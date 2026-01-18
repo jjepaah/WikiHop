@@ -69,6 +69,8 @@ h1, h2, h3 {
 /* Infoboxes / tables */
 #content .infobox,
 #content .infobox_v2,
+#content tr,
+#content .article-about-box,
 #content table {
     background-color: #1e1e1e !important;
     color: #e0e0e0 !important;

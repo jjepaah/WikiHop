@@ -1,4 +1,12 @@
-const WIKI_API = "https://en.wikipedia.org/w/api.php";
+let WIKI_LANG = "en";
+
+function setWikiLang(lang) {
+    WIKI_LANG = lang;
+}
+
+function getWikiApi() {
+    return `https://${WIKI_LANG}.wikipedia.org/w/api.php`;
+}
 
 async function fetchPage(title) {
   const params = new URLSearchParams({
@@ -10,7 +18,7 @@ async function fetchPage(title) {
   });
 
     try {
-        const res = await fetch(`${WIKI_API}?${params}`);
+        const res = await fetch(`${getWikiApi()}?${params}`);
         if (!res.ok) {
             console.warn('Failed to fetch page "${title}", status: ${res.status}');
             return '<p>Could not load page "${title}".</p>';
