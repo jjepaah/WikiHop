@@ -41,6 +41,7 @@ async function loadPage(title, isUserClick = true) {
     gameState.currentPage = page.title;
 
     renderPageWithTransition(page);
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth"});
 
     checkWin();
 }
