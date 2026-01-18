@@ -82,6 +82,7 @@ startForm.addEventListener("submit", e => {
     gameState.history = [];
 
     startModal.style.display = "none";
+    updateSidebar();
     loadPage(gameState.startPage, false);
 });
 
