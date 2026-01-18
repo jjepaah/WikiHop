@@ -1,5 +1,7 @@
 # WikiHop
 
+play at https://jjepaah.github.io/WikiHop
+
 A forward-only Wikipedia navigation game.
 
 Rules:
