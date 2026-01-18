@@ -9,8 +9,23 @@ async function fetchPage(title) {
     origin: "*"
   });
 
-  const res = await fetch(`${WIKI_API}?${params}`);
-  const data = await res.json();
+    try {
+        const res = await fetch(`${WIKI_API}?${params}`);
+        if (!res.ok) {
+            console.warn('Failed to fetch page "${title}", status: ${res.status}');
+            return '<p>Could not load page "${title}".</p>';
+        }
 
-  return data.parse;
+        const data = await res.json();
+        if (data.error) {
+            console.warn('Wikipedia API error for "${title}": ${data.error.info}');
+            return '<p>Page "${title}" does not exist.</p>';
+        }
+
+        return data.parse;
+
+    } catch (e) {
+        console.error('Error fetching page "${title}":', e);
+        return '<p>Error loading page "${title}".</p>';
+    }
 }

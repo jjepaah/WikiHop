@@ -217,3 +217,8 @@ p, li, table {
 #win-box button:hover {
     background-color: #64b5f6;
 }
+
+a[style*="not-allowed"] {
+    color: #a44;
+    text-decoration: none;
+}
