@@ -284,7 +284,7 @@ async function leaveParty() {
         if (party.hostUid === auth.currentUser.uid) {
             if (!startPartyBtn) {
                 startPartyBtn = document.createElement("button");
-                startPartyBtn.textContent = "Start Party";
+                startPartyBtn.textContent = "Start Game";
                 startPartyBtn.style.marginTop = "8px";
                 startPartyBtn.addEventListener("click", async () => {
                     await startParty(code);
