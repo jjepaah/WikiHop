@@ -203,6 +203,20 @@ newRoundBtn.addEventListener("click", () => {
     clickCounterEl.textContent = 0;
     gameState.history = [];
     startModal.style.display = "flex";
+    // restore start/join buttons if they were hidden for a party host
+    const startBtn = document.getElementById("start-game-btn");
+    if (startBtn) startBtn.style.display = "";
+    const joinBtn = document.getElementById("join-party-btn");
+    if (joinBtn) joinBtn.style.display = "";
+    const createBtn = document.getElementById("create-party-btn");
+    if (createBtn) createBtn.style.display = "";
+    // restore other start-box children (inputs, form) in case they were hidden for joiners
+    try {
+        const startBox = document.getElementById("start-box");
+        if (startBox) Array.from(startBox.children).forEach(child => child.style.display = "");
+    } catch (e) {
+        console.warn("Could not restore start-box children:", e);
+    }
 })
 
 homeBtn.addEventListener("click", () => {
@@ -212,6 +226,19 @@ homeBtn.addEventListener("click", () => {
 
     winModal.classList.add("hidden");
     startModal.style.display = "flex";
+    // restore start/join buttons if they were hidden for a party host
+    const startBtn2 = document.getElementById("start-game-btn");
+    if (startBtn2) startBtn2.style.display = "";
+    const joinBtn2 = document.getElementById("join-party-btn");
+    if (joinBtn2) joinBtn2.style.display = "";
+    const createBtn2 = document.getElementById("create-party-btn");
+    if (createBtn2) createBtn2.style.display = "";
+    try {
+        const startBox2 = document.getElementById("start-box");
+        if (startBox2) Array.from(startBox2.children).forEach(child => child.style.display = "");
+    } catch (e) {
+        console.warn("Could not restore start-box children:", e);
+    }
 });
 
 // Start

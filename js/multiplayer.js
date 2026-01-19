@@ -149,6 +149,42 @@ async function openPartyLobby(code) {
         }
     }
 
+    // For joiners: disable all start-menu controls and only show party code.
+    // For host: keep menu available (but hide create/join/start as before).
+    try {
+        const startBox = document.getElementById("start-box");
+        const startBtn = document.getElementById("start-game-btn");
+        const createBtn = document.getElementById("create-party-btn");
+
+        const isHost = partyData && partyData.hostUid === auth.currentUser.uid;
+
+        if (startBox) {
+            Array.from(startBox.children).forEach(child => {
+                // keep the party lobby element visible for everyone
+                if (child.id === "party-lobby-modal") {
+                    child.style.display = "flex";
+                    return;
+                }
+
+                // host sees normal menu; joiners see only party code
+                child.style.display = isHost ? "" : "none";
+            });
+        }
+
+        // additionally toggle individual buttons for clarity
+        if (isHost) {
+            if (joinPartyBtn) joinPartyBtn.style.display = "none";
+            if (startBtn) startBtn.style.display = "none";
+            if (createBtn) createBtn.style.display = "none";
+        } else {
+            if (joinPartyBtn) joinPartyBtn.style.display = "none";
+            if (startBtn) startBtn.style.display = "none";
+            if (createBtn) createBtn.style.display = "none";
+        }
+    } catch (e) {
+        console.warn("Could not toggle start/join/create UI:", e);
+    }
+
     // players list listener
     if (unsubscribePlayers) unsubscribePlayers();
     unsubscribePlayers = listenToPartyPlayers(code, players => {
