@@ -24,6 +24,7 @@ function renderPage(page) {
         ".metadata",
         ".navbox",
         ".vertical-navbox",
+        ".sistersitebox",
         ".mw-editsection",
         ".references",
         ".reflist",
