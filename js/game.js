@@ -36,6 +36,10 @@ startPageEl.textContent = gameState.startPage;
 targetPageEl.textContent = gameState.targetPage;
 clickCounterEl.textContent = gameState.clicks;
 
+//----------------------------------------------
+// Game functions
+//----------------------------------------------
+
 async function loadPage(title, isUserClick = true) {
     if (isUserClick) {
         gameState.clicks++;
@@ -92,6 +96,10 @@ function disableAllLinks() {
         link.style.opacity = 0.4;
     });
 }
+
+//----------------------------------------------
+// Event listeners
+//----------------------------------------------
 
 // Main menu start button
 startForm.addEventListener("submit", async e => {

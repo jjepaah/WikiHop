@@ -4,6 +4,10 @@ function setWikiLang(lang) {
     WIKI_LANG = lang;
 }
 
+function getWikiLang() {
+    return WIKI_LANG;
+}
+
 function getWikiApi() {
     return `https://${WIKI_LANG}.wikipedia.org/w/api.php`;
 }
