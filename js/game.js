@@ -108,13 +108,13 @@ startForm.addEventListener("submit", async e => {
     const mode = gamemodeSelect.value;
     gameState.mode = mode;
 
-    if (typeof setWikiLang === "function") setWikiLang(langSelect.value);
+    setWikiLang(langSelect.value);
 
     let start = startPageInput.value.trim();
     let target = targetPageInput.value.trim();
 
-    if (mode === "random" || !start) start = await getRandomPageTitle();
-    if (mode === "random" || !target) target = await getRandomPageTitle();
+    if (mode === "random" | !start) start = await getRandomPageTitle();
+    if (mode === "random" | !target) target = await getRandomPageTitle();
 
     while (target === start) {
         target = await getRandomPageTitle();
@@ -128,7 +128,7 @@ startForm.addEventListener("submit", async e => {
 
     startModal.style.display = "none";
 
-    if (mode === "timed") startTimer(360);
+    if (mode === "time") startTimer(360);
 
     updateSidebar();
     gameState.startTime = Date.now();
@@ -136,40 +136,6 @@ startForm.addEventListener("submit", async e => {
 
     loadPage(gameState.startPage, false);
 });
-
-// Exposed function for multiplayer to start the game using the same logic
-window.startGameFromParty = async function({ startPage, targetPage, wikiLang, mode } = {}) {
-    const m = mode || "set";
-    gameState.mode = m;
-
-    if (typeof setWikiLang === "function" && wikiLang) setWikiLang(wikiLang);
-
-    let start = (startPage && startPage.trim()) || (startPageInput.value || "").trim();
-    let target = (targetPage && targetPage.trim()) || (targetPageInput.value || "").trim();
-
-    if (m === "random" || !start) start = await getRandomPageTitle();
-    if (m === "random" || !target) target = await getRandomPageTitle();
-
-    while (target === start) {
-        target = await getRandomPageTitle();
-    }
-
-    gameState.startPage = start;
-    gameState.targetPage = target;
-    gameState.clicks = 0;
-    clickCounterEl.textContent = 0;
-    gameState.history = [];
-
-    startModal.style.display = "none";
-
-    if (m === "timed") startTimer(360);
-
-    updateSidebar();
-    gameState.startTime = Date.now();
-    gameState.endTime = null;
-
-    await loadPage(gameState.startPage, false);
-};
 
 let tooltipTimeout;
 
@@ -213,6 +179,7 @@ homeBtn.addEventListener("click", () => {
     winModal.classList.add("hidden");
     startModal.style.display = "flex";
 });
+
 
 // Start
 startModal.style.display = "flex";
