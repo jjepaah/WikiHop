@@ -14,7 +14,6 @@ const partyCodeEl = document.getElementById("party-code");
 const partyLobbyModal = document.getElementById("party-lobby-modal");
 const startHeader = document.getElementById("start-header");
 
-
 // lobby listeners
 let unsubscribePlayers = null;
 let unsubscribeParty = null;
@@ -193,23 +192,33 @@ async function openPartyLobby(code) {
             if (startedMillis && startedMillis !== localStartedAt) {
                 localStartedAt = startedMillis;
 
-                // apply party settings locally and start the game
+                // use shared game logic instead of clicking UI
                 try {
-                    if (party.wikiLang) {
-                        const langSel = document.getElementById("wiki-lang");
-                        if (langSel) langSel.value = party.wikiLang;
-                    }
-                    if (party.startPage) {
-                        const startInput = document.getElementById("start-menu");
-                        if (startInput) startInput.value = party.startPage;
-                    }
-                    if (party.targetPage) {
-                        const targetInput = document.getElementById("target-menu");
-                        if (targetInput) targetInput.value = party.targetPage;
-                    }
+                    if (window.startGameFromParty) {
+                        window.startGameFromParty({
+                            startPage: party.startPage,
+                            targetPage: party.targetPage,
+                            wikiLang: party.wikiLang,
+                            mode: party.mode
+                        }).catch(e => console.error("startGameFromParty failed:", e));
+                    } else {
+                        // fallback: apply party settings to inputs and click start button
+                        if (party.wikiLang) {
+                            const langSel = document.getElementById("wiki-lang");
+                            if (langSel) langSel.value = party.wikiLang;
+                        }
+                        if (party.startPage) {
+                            const startInput = document.getElementById("start-menu");
+                            if (startInput) startInput.value = party.startPage;
+                        }
+                        if (party.targetPage) {
+                            const targetInput = document.getElementById("target-menu");
+                            if (targetInput) targetInput.value = party.targetPage;
+                        }
 
-                    const startBtn = document.getElementById("start-game-btn");
-                    if (startBtn) startBtn.click();
+                        const startBtn = document.getElementById("start-game-btn");
+                        if (startBtn) startBtn.click();
+                    }
                 } catch (e) {
                     console.error("Failed to auto-start local game from party:", e);
                 }
@@ -225,7 +234,7 @@ async function openPartyLobby(code) {
 createPartyBtn.addEventListener("click", async () => {
     const playerName = prompt("Enter your name:") || "Anonymous";
     const wikiLang = typeof getWikiLang === "function" ? getWikiLang() : (document.getElementById("wiki-lang") || {}).value || "en";
-
+    
     const code = await createParty(playerName, wikiLang);
     await openPartyLobby(code);
 });
