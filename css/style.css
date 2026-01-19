@@ -108,6 +108,9 @@ h1, h2, h3 {
 
 /* Navboxes */
 #content .navbox,
+.NavHead,
+.NavContent,
+th,
 #content .vertical-navbox,
 #content .metadata {
     background-color: #1e1e1e !important;
@@ -252,4 +255,12 @@ p, li, table {
 a[style*="not-allowed"] {
     color: #a44;
     text-decoration: none;
+}
+
+#party-lobby-modal {
+    text-align: center;
+    /* if you prefer flex centering (JS sets display:flex) */
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }

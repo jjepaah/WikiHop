@@ -2,10 +2,8 @@ function renderPage(page) {
     const titleEl = document.getElementById("page-title");
     const contentEl = document.getElementById("content");
 
-    // Set title
     titleEl.textContent = page.title;
 
-    // Parse HTML
     const temp = document.createElement("div");
     temp.innerHTML = page.text["*"];
 
@@ -16,15 +14,29 @@ function renderPage(page) {
         return;
     }
 
-    // Remove unwanted UI elements
-    article.querySelectorAll(
-        ".infobox, .toc, .mw-heading, .mw-heading2, .mw-heading3, .metadata, .navbox, .vertical-navbox, .mw-editsection, .references, .reflist, .ol.references, .reference"
-    ).forEach(el => el.remove());
+    // Remove unwanted UI elements (including element with id="stub")
+    const removeSelectors = [
+        ".infobox",
+        ".toc",
+        ".mw-heading",
+        ".mw-heading2",
+        ".mw-heading3",
+        ".metadata",
+        ".navbox",
+        ".vertical-navbox",
+        ".mw-editsection",
+        ".references",
+        ".reflist",
+        ".ol.references",
+        ".reference",
+        ".extiw",
+        "#stub"
+    ];
+    article.querySelectorAll(removeSelectors.join(",")).forEach(el => el.remove());
 
+    // Remove lists that only contain external links
     article.querySelectorAll("ul").forEach(ul => {
-        if (ul.querySelector("a.external")) {
-            ul.remove();
-        }
+        if (ul.querySelector("a.external")) ul.remove();
     });
 
     removeEmptySections(article);
@@ -48,16 +60,18 @@ function renderPage(page) {
             return;
         }
 
-        // Only allow wiki navigation
+        // Only allow internal wiki navigation
         if (!href.startsWith("/wiki/")) return;
 
         link.addEventListener("click", e => {
             e.preventDefault();
-
-            const title = decodeURIComponent(
-                href.replace("/wiki/", "").replace(/_/g, " ")
-            );
-
+            const raw = href.replace("/wiki/", "").replace(/_/g, " ");
+            let title;
+            try {
+                title = decodeURIComponent(raw);
+            } catch {
+                title = raw;
+            }
             loadPage(title, true);
         });
     });
@@ -81,9 +95,7 @@ function removeEmptySections(article) {
             node = node.nextElementSibling;
         }
 
-        if (!hasContent) {
-            header.remove();
-        }
+        if (!hasContent) header.remove();
     });
 }
 
@@ -91,16 +103,13 @@ async function renderPageWithTransition(page) {
     const titleEl = document.getElementById("page-title");
     const contentEl = document.getElementById("content");
 
-    // Fade out
     contentEl.style.opacity = 0;
     titleEl.style.opacity = 0;
 
-    // Wait for transition duration
     await new Promise(r => setTimeout(r, 400));
 
     renderPage(page);
 
-    //Fade in
     requestAnimationFrame(() => {
         contentEl.style.opacity = 1;
         titleEl.style.opacity = 1;
