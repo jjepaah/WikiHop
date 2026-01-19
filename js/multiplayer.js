@@ -1,6 +1,6 @@
 // Firebase
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-import { doc, setDoc, onSnapshot, getDoc, serverTimestamp, collection, updateDoc } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
+import { doc, setDoc, onSnapshot, getDoc, serverTimestamp, collection, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 import { db } from "./firebase.js";
 
 // Create anonymous user
@@ -19,6 +19,7 @@ let unsubscribePlayers = null;
 let unsubscribeParty = null;
 let localStartedAt = null;
 let startPartyBtn = null;
+let leavePartyBtn = null;
 
 //----------------------------------------------
 // Multiplayer functions
@@ -119,6 +120,9 @@ async function openPartyLobby(code) {
     partyLobbyModal.classList.add("visible");
     partyLobbyModal.classList.remove("hidden");
 
+    // expose current party code for other helpers
+    try { window.CURRENT_PARTY = code; } catch (e) {}
+
     // fetch party once to know the host
     let partySnap = null;
     try {
@@ -148,6 +152,17 @@ async function openPartyLobby(code) {
             startPartyBtn = null;
         }
     }
+
+    // create a Leave Party button for everyone (only one instance)
+    if (!leavePartyBtn) {
+        leavePartyBtn = document.createElement("button");
+        leavePartyBtn.textContent = "Leave Party";
+        leavePartyBtn.style.marginTop = "8px";
+        leavePartyBtn.addEventListener("click", async () => {
+            await leaveParty();
+        });
+    }
+    if (!partyLobbyModal.contains(leavePartyBtn)) partyLobbyModal.appendChild(leavePartyBtn);
 
     // For joiners: disable all start-menu controls and only show party code.
     // For host: keep menu available (but hide create/join/start as before).
@@ -185,6 +200,74 @@ async function openPartyLobby(code) {
         console.warn("Could not toggle start/join/create UI:", e);
     }
 
+
+// Leave party locally: unsubscribe, clear hooks, restore UI and return to start modal
+async function leaveParty() {
+    try {
+        if (unsubscribePlayers) {
+            try { unsubscribePlayers(); } catch (e) {}
+            unsubscribePlayers = null;
+        }
+        if (unsubscribeParty) {
+            try { unsubscribeParty(); } catch (e) {}
+            unsubscribeParty = null;
+        }
+    } catch (e) {
+        console.warn("Error unsubscribing from party listeners:", e);
+    }
+
+    try {
+        // remove player document from party in Firestore (if present)
+        try {
+            const code = window.CURRENT_PARTY;
+            const uid = auth.currentUser && auth.currentUser.uid;
+            if (code && uid) {
+                await deleteDoc(doc(db, "parties", code, "players", uid));
+
+                // if no players left, delete the party document as well
+                try {
+                    const playersSnap = await getDocs(collection(db, "parties", code, "players"));
+                    if (!playersSnap || playersSnap.empty) {
+                        await deleteDoc(doc(db, "parties", code));
+                    }
+                } catch (e) {
+                    console.warn("Failed to check/delete empty party:", e);
+                }
+            }
+        } catch (e) {
+            console.warn("Failed to remove player doc from party:", e);
+        }
+
+        // clear global party hooks
+        if (window.onLocalWin) window.onLocalWin = null;
+        if (window.CURRENT_PARTY) window.CURRENT_PARTY = null;
+    } catch (e) {}
+
+    // hide lobby modal
+    try {
+        partyLobbyModal.classList.remove("visible");
+        partyLobbyModal.classList.add("hidden");
+        partyLobbyModal.style.display = "none";
+    } catch (e) {}
+
+    // restore start-box UI and main buttons
+    try {
+        const startBox = document.getElementById("start-box");
+        if (startBox) Array.from(startBox.children).forEach(child => child.style.display = "");
+    } catch (e) {}
+
+    try {
+        const startBtn = document.getElementById("start-game-btn");
+        const createBtn = document.getElementById("create-party-btn");
+        const joinBtn = document.getElementById("join-party-btn");
+        if (startBtn) startBtn.style.display = "";
+        if (createBtn) createBtn.style.display = "";
+        if (joinBtn) joinBtn.style.display = "";
+    } catch (e) {}
+
+    // show start modal
+    try { startModal.style.display = "flex"; } catch (e) {}
+}
     // players list listener
     if (unsubscribePlayers) unsubscribePlayers();
     unsubscribePlayers = listenToPartyPlayers(code, players => {
