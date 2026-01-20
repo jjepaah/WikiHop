@@ -13,6 +13,7 @@ const joinPartyBtn = document.getElementById("join-party-btn");
 const partyCodeEl = document.getElementById("party-code");
 const partyLobbyModal = document.getElementById("party-lobby-modal");
 const startHeader = document.getElementById("start-header");
+const partyGamemodeSelect = document.getElementById("party-gamemode");
 
 // lobby listeners
 let unsubscribePlayers = null;
@@ -20,6 +21,91 @@ let unsubscribeParty = null;
 let localStartedAt = null;
 let startPartyBtn = null;
 let leavePartyBtn = null;
+
+//----------------------------------------------
+// Gamemode Configuration
+//----------------------------------------------
+
+/**
+ * Gamemode definitions
+ * Each gamemode can have custom properties and behaviors
+ * Add new gamemodes here for easy maintenance and expansion
+ */
+const GAMEMODES = {
+    teamwork: {
+        id: "teamwork",
+        label: "Teamwork",
+        description: "Work together to reach the target",
+        rules: {
+            sharedClicks: true,
+            sharedTimer: true,
+            competitiveScoring: false,
+            allowCollaboration: true
+        },
+        colors: {
+            primary: "#4CAF50",
+            secondary: "#81C784"
+        }
+    },
+    competition: {
+        id: "competition",
+        label: "Competition",
+        description: "Race against other players",
+        rules: {
+            sharedClicks: false,
+            sharedTimer: true,
+            competitiveScoring: true,
+            allowCollaboration: false
+        },
+        colors: {
+            primary: "#FF6B6B",
+            secondary: "#FF8A8A"
+        }
+    }
+};
+
+/**
+ * Get all gamemode IDs for dropdown/UI
+ */
+function getAvailableGamemodes() {
+    return Object.values(GAMEMODES).map(mode => ({
+        id: mode.id,
+        label: mode.label,
+        description: mode.description
+    }));
+}
+
+/**
+ * Get gamemode configuration by ID
+ */
+function getGamemode(gamemodeId) {
+    return GAMEMODES[gamemodeId] || GAMEMODES.teamwork;
+}
+
+/**
+ * Check if a specific rule is enabled for a gamemode
+ */
+function isRuleEnabled(gamemodeId, ruleName) {
+    const gamemode = getGamemode(gamemodeId);
+    return gamemode.rules[ruleName] === true;
+}
+
+// Initialize gamemode dropdown
+function initializeGamemodeDropdown() {
+    const gamemodes = getAvailableGamemodes();
+    partyGamemodeSelect.innerHTML = "";
+    gamemodes.forEach(mode => {
+        const option = document.createElement("option");
+        option.value = mode.id;
+        option.textContent = mode.label;
+        option.title = mode.description;
+        partyGamemodeSelect.appendChild(option);
+    });
+    partyGamemodeSelect.value = "teamwork"; // Set default
+}
+
+// Initialize on load
+initializeGamemodeDropdown();
 
 //----------------------------------------------
 // Multiplayer functions
@@ -34,10 +120,12 @@ async function createParty(playerName, wikiLang) {
     const uid = auth.currentUser.uid;
     
     const partyRef = doc(db, "parties", code);
+    const gamemode = partyGamemodeSelect.value || "teamwork";
 
     await setDoc(partyRef, {
         code,
         mode: "party",
+        gamemode,
         wikiLang,
         status: "lobby",
         hostUid: uid,
@@ -95,6 +183,22 @@ export function listenToParty(partyCode, onPartyUpdate) {
     });
 }
 
+/**
+ * Mark the party as finished (used in teamwork mode when any player wins)
+ * This will trigger win modal for all players in the party
+ */
+export async function markPartyAsFinished(partyCode) {
+    try {
+        const partyRef = doc(db, "parties", partyCode);
+        await updateDoc(partyRef, {
+            finished: true,
+            finishedAt: serverTimestamp()
+        });
+    } catch (e) {
+        console.error("Failed to mark party as finished:", e);
+    }
+}
+
 async function startParty(partyCode) {
     const partyRef = doc(db, "parties", partyCode);
     const startPage = (document.getElementById("start-menu") || {}).value || "";
@@ -132,6 +236,22 @@ async function openPartyLobby(code) {
     }
     const partyData = partySnap && partySnap.exists() ? partySnap.data() : null;
 
+    // Set gamemode dropdown to current party gamemode
+    if (partyData && partyData.gamemode) {
+        partyGamemodeSelect.value = partyData.gamemode;
+    }
+
+    // Add listener for gamemode changes (only host can change)
+    const handleGamemodeChange = async () => {
+        if (partyData && partyData.hostUid === auth.currentUser.uid) {
+            await updateDoc(partyRef, {
+                gamemode: partyGamemodeSelect.value
+            });
+        }
+    };
+    partyGamemodeSelect.removeEventListener("change", handleGamemodeChange);
+    partyGamemodeSelect.addEventListener("change", handleGamemodeChange);
+
     // create start button only for host (do not create for others)
     if (partyData && partyData.hostUid === auth.currentUser.uid) {
         if (!startPartyBtn) {
@@ -151,6 +271,8 @@ async function openPartyLobby(code) {
             startPartyBtn.remove();
             startPartyBtn = null;
         }
+        // Disable gamemode dropdown for non-host players
+        partyGamemodeSelect.disabled = true;
     }
 
     // create a Leave Party button for everyone (only one instance)
@@ -200,8 +322,103 @@ async function openPartyLobby(code) {
         console.warn("Could not toggle start/join/create UI:", e);
     }
 
+    // players list listener
+    if (unsubscribePlayers) unsubscribePlayers();
+    unsubscribePlayers = listenToPartyPlayers(code, players => {
+        console.log("Party players:", players);
+        // TODO: render players into lobby UI
+    });
 
-// Leave party locally: unsubscribe, clear hooks, restore UI and return to start modal
+    // party meta listener: ensure host-only start button and react to started state
+    if (unsubscribeParty) unsubscribeParty();
+    unsubscribeParty = listenToParty(code, party => {
+        console.log("Party data:", party);
+
+        // Update gamemode dropdown if changed by host
+        if (party.gamemode && party.gamemode !== partyGamemodeSelect.value) {
+            partyGamemodeSelect.value = party.gamemode;
+        }
+
+        // ensure button exists only for host
+        if (party.hostUid === auth.currentUser.uid) {
+            if (!startPartyBtn) {
+                startPartyBtn = document.createElement("button");
+                startPartyBtn.textContent = "Start Game";
+                startPartyBtn.style.marginTop = "8px";
+                startPartyBtn.addEventListener("click", async () => {
+                    await startParty(code);
+                });
+                partyLobbyModal.appendChild(startPartyBtn);
+            }
+            startPartyBtn.style.display = "inline-block";
+        } else {
+            if (startPartyBtn && partyLobbyModal.contains(startPartyBtn)) {
+                startPartyBtn.remove();
+                startPartyBtn = null;
+            }
+        }
+
+        // when party is started -> trigger local game start (only once)
+        if (party.status === "started" && party.startedAt) {
+            let startedMillis = null;
+            try {
+                startedMillis = party.startedAt.toMillis();
+            } catch {
+                startedMillis = party.startedAt && party.startedAt.seconds ? party.startedAt.seconds * 1000 : null;
+            }
+
+            if (startedMillis && startedMillis !== localStartedAt) {
+                localStartedAt = startedMillis;
+
+                // use shared game logic instead of clicking UI
+                try {
+                    if (window.startGameFromParty) {
+                        window.startGameFromParty({
+                            startPage: party.startPage,
+                            targetPage: party.targetPage,
+                            wikiLang: party.wikiLang,
+                            mode: party.mode,
+                            partyCode: code,
+                            gamemode: party.gamemode
+                        }).catch(e => console.error("startGameFromParty failed:", e));
+                    } else {
+                        // fallback: apply party settings to inputs and click start button
+                        if (party.wikiLang) {
+                            const langSel = document.getElementById("wiki-lang");
+                            if (langSel) langSel.value = party.wikiLang;
+                        }
+                        if (party.startPage) {
+                            const startInput = document.getElementById("start-menu");
+                            if (startInput) startInput.value = party.startPage;
+                        }
+                        if (party.targetPage) {
+                            const targetInput = document.getElementById("target-menu");
+                            if (targetInput) targetInput.value = party.targetPage;
+                        }
+
+                        const startBtn = document.getElementById("start-game-btn");
+                        if (startBtn) startBtn.click();
+                    }
+                } catch (e) {
+                    console.error("Failed to auto-start local game from party:", e);
+                }
+            }
+        }
+
+        // In teamwork mode, if any player has finished, show win modal to everyone
+        if (party.gamemode === "teamwork" && party.finished) {
+            try {
+                const winModal = document.getElementById("win-modal");
+                if (winModal && winModal.classList.contains("hidden")) {
+                    winModal.classList.remove("hidden");
+                    console.log("Team reached the target!");
+                }
+            } catch (e) {
+                console.warn("Could not show win modal:", e);
+            }
+        }
+    });
+}
 async function leaveParty() {
     try {
         if (unsubscribePlayers) {
@@ -248,6 +465,8 @@ async function leaveParty() {
         partyLobbyModal.classList.remove("visible");
         partyLobbyModal.classList.add("hidden");
         partyLobbyModal.style.display = "none";
+        partyGamemodeSelect.disabled = false;
+        partyGamemodeSelect.value = "teamwork"; // Reset to default
     } catch (e) {}
 
     // restore start-box UI and main buttons
@@ -267,83 +486,6 @@ async function leaveParty() {
 
     // show start modal
     try { startModal.style.display = "flex"; } catch (e) {}
-}
-    // players list listener
-    if (unsubscribePlayers) unsubscribePlayers();
-    unsubscribePlayers = listenToPartyPlayers(code, players => {
-        console.log("Party players:", players);
-        // TODO: render players into lobby UI
-    });
-
-    // party meta listener: ensure host-only start button and react to started state
-    if (unsubscribeParty) unsubscribeParty();
-    unsubscribeParty = listenToParty(code, party => {
-        console.log("Party data:", party);
-
-        // ensure button exists only for host
-        if (party.hostUid === auth.currentUser.uid) {
-            if (!startPartyBtn) {
-                startPartyBtn = document.createElement("button");
-                startPartyBtn.textContent = "Start Game";
-                startPartyBtn.style.marginTop = "8px";
-                startPartyBtn.addEventListener("click", async () => {
-                    await startParty(code);
-                });
-                partyLobbyModal.appendChild(startPartyBtn);
-            }
-            startPartyBtn.style.display = "inline-block";
-        } else {
-            if (startPartyBtn && partyLobbyModal.contains(startPartyBtn)) {
-                startPartyBtn.remove();
-                startPartyBtn = null;
-            }
-        }
-
-        // when party is started -> trigger local game start (only once)
-        if (party.status === "started" && party.startedAt) {
-            let startedMillis = null;
-            try {
-                startedMillis = party.startedAt.toMillis();
-            } catch {
-                startedMillis = party.startedAt && party.startedAt.seconds ? party.startedAt.seconds * 1000 : null;
-            }
-
-            if (startedMillis && startedMillis !== localStartedAt) {
-                localStartedAt = startedMillis;
-
-                // use shared game logic instead of clicking UI
-                try {
-                    if (window.startGameFromParty) {
-                        window.startGameFromParty({
-                            startPage: party.startPage,
-                            targetPage: party.targetPage,
-                            wikiLang: party.wikiLang,
-                            mode: party.mode
-                        }).catch(e => console.error("startGameFromParty failed:", e));
-                    } else {
-                        // fallback: apply party settings to inputs and click start button
-                        if (party.wikiLang) {
-                            const langSel = document.getElementById("wiki-lang");
-                            if (langSel) langSel.value = party.wikiLang;
-                        }
-                        if (party.startPage) {
-                            const startInput = document.getElementById("start-menu");
-                            if (startInput) startInput.value = party.startPage;
-                        }
-                        if (party.targetPage) {
-                            const targetInput = document.getElementById("target-menu");
-                            if (targetInput) targetInput.value = party.targetPage;
-                        }
-
-                        const startBtn = document.getElementById("start-game-btn");
-                        if (startBtn) startBtn.click();
-                    }
-                } catch (e) {
-                    console.error("Failed to auto-start local game from party:", e);
-                }
-            }
-        }
-    });
 }
 
 //----------------------------------------------

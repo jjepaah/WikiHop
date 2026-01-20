@@ -27,6 +27,8 @@ const gameState = {
     currentPage: null,
     history: [],
     mode: "set",
+    gamemode: "individual",
+    partyCode: null,
 
     startTime: null,
     endTime: null
@@ -72,6 +74,16 @@ async function checkWin() {
         const runTimeSeconds = Math.round(runTimeMs / 1000);
 
         finalTimeEl.textContent = `${runTimeSeconds} seconds`;
+
+        // In party mode with teamwork, notify other players
+        if (gameState.mode === "party" && gameState.gamemode === "teamwork" && window.CURRENT_PARTY) {
+            try {
+                const { markPartyAsFinished } = await import("./multiplayer.js");
+                await markPartyAsFinished(window.CURRENT_PARTY);
+            } catch (e) {
+                console.warn("Could not mark party as finished:", e);
+            }
+        }
 
         if (gameState.mode === "random") {
 
@@ -138,9 +150,11 @@ startForm.addEventListener("submit", async e => {
 });
 
 // Exposed function for multiplayer to start the game using the same logic
-window.startGameFromParty = async function({ startPage, targetPage, wikiLang, mode } = {}) {
+window.startGameFromParty = async function({ startPage, targetPage, wikiLang, mode, partyCode, gamemode } = {}) {
     const m = mode || "set";
     gameState.mode = m;
+    gameState.gamemode = gamemode || "individual";
+    gameState.partyCode = partyCode || null;
 
     if (typeof setWikiLang === "function" && wikiLang) setWikiLang(wikiLang);
 
