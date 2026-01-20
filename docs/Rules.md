@@ -65,6 +65,12 @@ Race against in or with other players to reach the same target page first.
 - [Random](#random) game mode: Completing run saves your username, total clicks, start, target pages and completion time to the Random ranked leaderboard.
 - [Time Attack](#time-attack) game mode: Completing run with random start and target pages in standard time limit saves the same statistics as Random ranked leaderboard but in place of completion time it logs the time left.
 
+### Party
+- Create party with "Create Party" button on main menu.
+   - You are taken to party lobby with your party code
+- Join party with "Join Party" button on main menu.
+   - When asked enter party code
+
 ---
 
 *Have fun hopping through Wikipedia!*
