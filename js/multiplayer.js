@@ -115,6 +115,24 @@ export function listenToParty(partyCode, onPartyUpdate) {
 }
 
 /**
+ * Set the competition winner for a party.
+ * If the party is already marked finished, this is a no-op.
+ */
+export async function setCompetitionWinner(partyCode, { clicks, timeMs }) {
+    const partyRef = doc(db, "parties", partyCode);
+    const snap = await getDoc(partyRef);
+    if (snap.exists() && snap.data().finished) return; // winner already set
+
+    await updateDoc(partyRef, {
+        finished: true,
+        finishedAt: serverTimestamp(),
+        winnerId: auth.currentUser.uid,
+        winnerClicks: clicks,
+        winnerTimeMs: timeMs
+    });
+}
+
+/**
  * Mark the party as finished (used in teamwork mode when any player wins)
  * This will trigger win modal for all players in the party
  */
@@ -347,6 +365,32 @@ async function openPartyLobby(code) {
                 }
             } catch (e) {
                 console.warn("Could not show win modal:", e);
+            }
+        }
+
+        // In competition mode, if a winner is recorded, show outcome to everyone
+        if (party.gamemode === "competition" && party.finished && party.winnerId) {
+            try {
+                const titleEl = document.getElementById("win-title");
+                const clicksEl = document.getElementById("final-clicks");
+                const timeEl = document.getElementById("final-time");
+                const winModal = document.getElementById("win-modal");
+
+                const isWinner = auth.currentUser && auth.currentUser.uid === party.winnerId;
+                if (titleEl) titleEl.textContent = isWinner ? "You won" : "You lost";
+                if (clicksEl) clicksEl.textContent = party.winnerClicks ?? 0;
+                if (timeEl) timeEl.textContent = party.winnerTimeMs != null ? `${(party.winnerTimeMs / 1000).toFixed(2)}s` : "";
+
+                if (winModal && winModal.classList.contains("hidden")) {
+                    winModal.classList.remove("hidden");
+                }
+                // Disable further navigation
+                document.querySelectorAll("#content a").forEach(link => {
+                    link.style.pointerEvents = "none";
+                    link.style.opacity = 0.4;
+                });
+            } catch (e) {
+                console.warn("Could not show competition result modal:", e);
             }
         }
     });

@@ -50,7 +50,14 @@ export class TimedMode extends BaseModeHandler {
         
         this.timerInterval = setInterval(() => {
             const elapsed = (Date.now() - gameState.startTime) / 1000;
-            if (timerEl) timerEl.textContent = elapsed.toFixed(2) + "s";
+            const remaining = Math.max(this.timerDuration - elapsed, 0);
+            if (timerEl) timerEl.textContent = remaining.toFixed(2) + "s";
+
+            // Stop updating once we hit zero; the timeout handler will finish the flow
+            if (remaining <= 0) {
+                clearInterval(this.timerInterval);
+                this.timerInterval = null;
+            }
         }, 10);
     }
 

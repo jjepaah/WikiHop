@@ -207,14 +207,21 @@ p, li, table {
 }
 
 #start-box input {
-    width: 80%;
-    padding: 0.5rem;
-    margin: 0.5rem auto 1rem auto;
+    width: 100%;
+    padding: 0.7rem;
+    margin: 0 0 1rem 0;
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    border: 1px solid #333;
     border-radius: 6px;
-    border: none;
     outline: none;
     font-size: 1rem;
+    box-sizing: border-box;
     display: block;
+}
+
+#start-box input:hover {
+    border-color: #90caf9;
 }
 
 #wiki-lang,
