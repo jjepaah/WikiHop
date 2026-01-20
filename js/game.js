@@ -49,6 +49,7 @@ async function checkWin() {
             timerTimeout = null;
         }
 
+        if (ui.winTitleEl) ui.winTitleEl.textContent = "You reached the target!";
         ui.finalClicksEl.textContent = state.gameState.clicks;
         ui.winModal.classList.remove("hidden");
         disableAllLinks();
@@ -87,6 +88,19 @@ async function checkWin() {
                     await markPartyAsFinished(window.CURRENT_PARTY);
                 } catch (e) {
                     console.warn("Could not mark party as finished:", e);
+                }
+            }
+
+            // Handle competition winner recording
+            if (state.gameState.mode === "party" && state.gameState.gamemode === "competition" && window.CURRENT_PARTY) {
+                try {
+                    const { setCompetitionWinner } = await import("./multiplayer.js");
+                    await setCompetitionWinner(window.CURRENT_PARTY, {
+                        clicks: winResult.clicks,
+                        timeMs: winResult.timeMs
+                    });
+                } catch (e) {
+                    console.warn("Could not record competition winner:", e);
                 }
             }
         } catch (e) {
@@ -209,8 +223,9 @@ ui.startForm.addEventListener("submit", async e => {
         timerTimeout = setTimeout(() => {
             // Time's up - show game over
             if (state.gameState.currentPage !== state.gameState.targetPage) {
+                if (ui.winTitleEl) ui.winTitleEl.textContent = "Your time ran out";
                 ui.finalClicksEl.textContent = state.gameState.clicks;
-                ui.finalTimeEl.textContent = timeLimitMinutes + "m";
+                ui.finalTimeEl.textContent = `${(timeLimitMinutes * 60).toFixed(2)}s`;
                 ui.winModal.classList.remove("hidden");
                 disableAllLinks();
                 // Clean up the gamemode
