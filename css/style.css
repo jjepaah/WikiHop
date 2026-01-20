@@ -181,31 +181,188 @@ p, li, table {
     text-align: center;
     min-width: 400px;
     max-width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: hidden;
     box-shadow: 0 0 30px rgba(0,0,0,0.7);
+}
+
+/* Custom scrollbar for modal */
+#start-box::-webkit-scrollbar {
+    width: 8px;
+}
+
+#start-box::-webkit-scrollbar-track {
+    background: #1e1e1e;
+    border-radius: 10px;
+}
+
+#start-box::-webkit-scrollbar-thumb {
+    background: #90caf9;
+    border-radius: 10px;
+}
+
+#start-box::-webkit-scrollbar-thumb:hover {
+    background: #64b5f6;
 }
 
 #start-box input {
     width: 80%;
     padding: 0.5rem;
-    margin: 0.5rem 0 1rem 0;
+    margin: 0.5rem auto 1rem auto;
     border-radius: 6px;
     border: none;
     outline: none;
     font-size: 1rem;
+    display: block;
+}
+
+#wiki-lang,
+#gamemode {
+    width: 100%;
+    padding: 0.7rem;
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    border: 1px solid #333;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    box-sizing: border-box;
+    margin-bottom: 1rem;
+}
+
+#wiki-lang:hover,
+#gamemode:hover {
+    border-color: #90caf9;
+}
+
+#time-limit-preset,
+#custom-time-input {
+    width: 100%;
+    padding: 0.7rem;
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    border: 1px solid #333;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    box-sizing: border-box;
+    margin-bottom: 1rem;
+}
+
+#time-limit-preset:hover,
+#custom-time-input:hover {
+    border-color: #90caf9;
+}
+
+#start-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+/* Dropdowns container */
+.dropdowns-container {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.dropdown-section {
+    flex: 1;
+}
+
+/* Time limit section - hidden by default */
+.time-limit-section {
+    margin-bottom: 1rem;
+}
+
+.time-limit-section.hidden {
+    display: none !important;
+}
+
+/* Page input sections - hidden by default for random mode */
+.page-input-section {
+    display: none;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+}
+
+.page-input-section label {
+    min-width: 100px;
+    text-align: left;
+    margin-bottom: 0;
+}
+
+.page-input-section input {
+    flex: 1;
+    width: auto;
+    margin: 0;
+}
+
+/* Buttons container with flexbox layout */
+#start-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
 }
 
 #start-box button {
-    padding: 0.7rem 1.5rem;
+    padding: 0.8rem 1.5rem;
     border: none;
     border-radius: 6px;
-    background-color: #90caf9;
-    color: #121212;
     font-weight: bold;
     cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
 }
 
 #start-box button:hover {
+    transform: translateY(-2px);
+}
+
+.button-container button {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.button-container button:hover {
+    transform: translateY(-2px);
+}
+
+/* All buttons - Blue */
+#start-game-btn,
+#create-party-btn,
+#join-party-btn {
+    background-color: #90caf9;
+    color: #121212;
+}
+
+#start-game-btn:hover,
+#create-party-btn:hover,
+#join-party-btn:hover {
     background-color: #64b5f6;
+}
+
+/* Separator styling */
+#start-box br {
+    display: none;
+}
+
+/* Button container for party buttons */
+.button-container {
+    display: flex;
+    flex-direction: row;
+    gap: 0.8rem;
+    justify-content: center;
+    margin-top: 0.8rem;
 }
 
 /*=== Win overlay ===*/
@@ -240,17 +397,20 @@ p, li, table {
 
 #win-box button {
     margin-top: 1rem;
-    padding: 0.5rem 1rem;
+    padding: 0.8rem 1.5rem;
     border: none;
     border-radius: 6px;
     background-color: #90caf9;
     color: #121212;
     font-weight: bold;
     cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
 }
 
 #win-box button:hover {
     background-color: #64b5f6;
+    transform: translateY(-2px);
 }
 
 a[style*="not-allowed"] {
@@ -264,4 +424,110 @@ a[style*="not-allowed"] {
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: 2rem 0;
 }
+
+.party-lobby-content {
+    background-color: #252525;
+    border-radius: 10px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 500px;
+}
+
+.party-lobby-content h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    color: #90caf9;
+    font-size: 1.5rem;
+}
+
+.party-info {
+    background-color: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.party-info p {
+    margin: 0.5rem 0;
+}
+
+.party-code-display {
+    font-family: 'Courier New', monospace;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #4CAF50;
+    margin: 0.5rem 0 0 0 !important;
+}
+
+.party-gamemode {
+    margin-bottom: 1.5rem;
+}
+
+.party-gamemode label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.party-gamemode select {
+    width: 100%;
+    padding: 0.7rem;
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    border: 1px solid #333;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.party-gamemode select:hover {
+    border-color: #90caf9;
+}
+
+.party-gamemode select:focus {
+    outline: none;
+    border-color: #90caf9;
+    box-shadow: 0 0 5px rgba(144, 202, 249, 0.3);
+}
+
+.party-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.party-buttons button {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.party-buttons button:nth-child(1) {
+    background-color: #90caf9;
+    color: #121212;
+}
+
+.party-buttons button:nth-child(1):hover {
+    background-color: #64b5f6;
+    transform: translateY(-2px);
+}
+
+.party-buttons button:nth-child(2) {
+    background-color: #f44336;
+    color: white;
+}
+
+.party-buttons button:nth-child(2):hover {
+    background-color: #e53935;
+    transform: translateY(-2px);
+}
+
