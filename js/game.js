@@ -1,103 +1,87 @@
-const clickCounterEl = document.getElementById("click-counter");
-const startPageEl = document.getElementById("start-page");
-const targetPageEl = document.getElementById("target-page");
+import { ui } from "./ui/uiElements.js";
+import { renderPageWithTransition } from "./ui.js";
+import * as state from "./core/gameState.js";
+import { modeRegistry } from "./gamemodes/modeRegistry.js";
 
-// Main menu
-const startModal = document.getElementById("start-modal");
-const startPageInput = document.getElementById("start-menu");
-const targetPageInput = document.getElementById("target-menu");
-const startForm = document.getElementById("start-form");
-const langSelect = document.getElementById("wiki-lang");
-const gamemodeSelect = document.getElementById("gamemode");
-
-// Sidebar
-const tooltip = document.getElementById("target-tooltip");
-const homeBtn = document.getElementById("home-btn");
-
-// Win
-const winModal = document.getElementById("win-modal");
-const finalClicksEl = document.getElementById("final-clicks");
-const finalTimeEl = document.getElementById("final-time");
-const newRoundBtn = document.getElementById("new-round-btn");
-
-const gameState = {
-    startPage: "Finland",
-    targetPage: "Pakkala",
-    clicks: 0,
-    currentPage: null,
-    history: [],
-    mode: "set",
-    gamemode: "individual",
-    partyCode: null,
-
-    startTime: null,
-    endTime: null
-};
-
-startPageEl.textContent = gameState.startPage;
-targetPageEl.textContent = gameState.targetPage;
-clickCounterEl.textContent = gameState.clicks;
-
+ui.startPageEl.textContent = state.gameState.startPage;
+ui.targetPageEl.textContent = state.gameState.targetPage;
+ui.clickCounterEl.textContent = state.gameState.clicks;
 //----------------------------------------------
 // Game functions
 //----------------------------------------------
 
-async function loadPage(title, isUserClick = true) {
+export async function loadPage(title, isUserClick = true) {
     if (isUserClick) {
-        gameState.clicks++;
-        clickCounterEl.textContent = gameState.clicks;
+        state.gameState.clicks++;
+        ui.clickCounterEl.textContent = state.gameState.clicks;
 
-        gameState.history.push(title);
+        state.gameState.history.push(title);
     }
 
-    startPageEl.textContent = gameState.startPage;
-    targetPageEl.textContent = gameState.targetPage;
-    clickCounterEl.textContent = gameState.clicks;
+    ui.startPageEl.textContent = state.gameState.startPage;
+    ui.targetPageEl.textContent = state.gameState.targetPage;
+    ui.clickCounterEl.textContent = state.gameState.clicks;
 
     const page = await fetchPage(title);
-    gameState.currentPage = page.title;
+    state.gameState.currentPage = page.title;
 
     renderPageWithTransition(page);
+
+    // Call gamemode's onPageLoad hook
+    try {
+        const currentMode = modeRegistry.getCurrentMode();
+        await currentMode.onPageLoad(state.gameState, page.title);
+    } catch (e) {
+        console.warn("Error in gamemode onPageLoad:", e);
+    }
 
     checkWin();
 }
 
 async function checkWin() {
-    if (gameState.currentPage === gameState.targetPage) {
-        finalClicksEl.textContent = gameState.clicks;
-        winModal.classList.remove("hidden");
+    if (state.gameState.currentPage === state.gameState.targetPage) {
+        ui.finalClicksEl.textContent = state.gameState.clicks;
+        ui.winModal.classList.remove("hidden");
         disableAllLinks();
-        
-        gameState.endTime = Date.now();
 
-        const runTimeMs = gameState.endTime - gameState.startTime;
+        state.gameState.endTime = Date.now();
+
+        const runTimeMs = state.gameState.endTime - state.gameState.startTime;
         const runTimeSeconds = Math.round(runTimeMs / 1000);
 
-        finalTimeEl.textContent = `${runTimeSeconds} seconds`;
+        ui.finalTimeEl.textContent = `${runTimeSeconds} seconds`;
 
-        // In party mode with teamwork, notify other players
-        if (gameState.mode === "party" && gameState.gamemode === "teamwork" && window.CURRENT_PARTY) {
-            try {
-                const { markPartyAsFinished } = await import("./multiplayer.js");
-                await markPartyAsFinished(window.CURRENT_PARTY);
-            } catch (e) {
-                console.warn("Could not mark party as finished:", e);
+        // Call gamemode's onWin handler
+        try {
+            const currentMode = modeRegistry.getCurrentMode();
+            const winResult = await currentMode.onWin(state.gameState);
+
+            // Handle gamemode-specific win logic
+            if (winResult.shouldSaveLeaderboard) {
+                const player = prompt("Enter your name for the leaderboard:") || "Anonymous";
+                await saveRandomScore({
+                    player,
+                    clicks: winResult.clicks,
+                    startPage: winResult.startPage,
+                    targetPage: winResult.targetPage,
+                    timeMs: winResult.timeMs
+                });
+
+                const leaderboard = await getRandomLeaderboard();
+                console.log("Top 10 scores:", leaderboard);
             }
-        }
 
-        if (gameState.mode === "random") {
-
-            const player = prompt("Enter your name for the leaderboard:") || "Anonymous";
-            await saveRandomScore({
-                player,
-                clicks: gameState.clicks,
-                startPage: gameState.startPage,
-                targetPage: gameState.targetPage,
-                timeMs: runTimeMs
-            });
-
-            const leaderboard = await getRandomLeaderboard();
-            console.log("Top 10 scores:", leaderboard);
+            // Handle teamwork notification
+            if (winResult.notifyOthers && state.gameState.mode === "party" && state.gameState.gamemode === "teamwork" && window.CURRENT_PARTY) {
+                try {
+                    const { markPartyAsFinished } = await import("./multiplayer.js");
+                    await markPartyAsFinished(window.CURRENT_PARTY);
+                } catch (e) {
+                    console.warn("Could not mark party as finished:", e);
+                }
+            }
+        } catch (e) {
+            console.warn("Error in gamemode onWin:", e);
         }
     }
 }
@@ -113,110 +97,117 @@ function disableAllLinks() {
 // Event listeners
 //----------------------------------------------
 
-// Main menu start button
-startForm.addEventListener("submit", async e => {
+// Toggle page inputs visibility based on gamemode selection
+ui.gamemodeSelect.addEventListener("change", () => {
+    const pageInputSections = document.querySelectorAll(".page-input-section");
+    const isRandomMode = ui.gamemodeSelect.value === "random";
+    
+    pageInputSections.forEach(section => {
+        section.style.display = isRandomMode ? "none" : "flex";
+    });
+});
+
+// Main menu start button - single player
+ui.startForm.addEventListener("submit", async e => {
     e.preventDefault();
 
-    const mode = gamemodeSelect.value;
-    gameState.mode = mode;
+    const modeId = ui.gamemodeSelect.value;
+    
+    // Set current gamemode in registry
+    const currentMode = modeRegistry.setCurrentMode(modeId);
 
-    if (typeof setWikiLang === "function") setWikiLang(langSelect.value);
+    if (typeof setWikiLang === "function") setWikiLang(ui.langSelect.value);
 
-    let start = startPageInput.value.trim();
-    let target = targetPageInput.value.trim();
+    let start = ui.startPageInput.value.trim();
+    let target = ui.targetPageInput.value.trim();
 
-    if (mode === "random" || !start) start = await getRandomPageTitle();
-    if (mode === "random" || !target) target = await getRandomPageTitle();
+    // For random mode, generate random pages if not provided
+    if (modeId === "random" || !start) start = await getRandomPageTitle();
+    if (modeId === "random" || !target) target = await getRandomPageTitle();
 
     while (target === start) {
         target = await getRandomPageTitle();
     }
 
-    gameState.startPage = start;
-    gameState.targetPage = target;
-    gameState.clicks = 0;
-    clickCounterEl.textContent = 0;
-    gameState.history = [];
+    // Initialize the gamemode with necessary params
+    await currentMode.initialize(state.gameState, {
+        startPage: start,
+        targetPage: target,
+        wikiLang: ui.langSelect.value,
+        getRandomPageTitle
+    });
 
-    startModal.style.display = "none";
+    // For timed mode, set up timer
+    if (modeId === "timed") {
+        startTimer(360);
+    }
 
-    if (mode === "timed") startTimer(360);
+    ui.clickCounterEl.textContent = 0;
+    ui.startModal.style.display = "none";
 
     updateSidebar();
-    gameState.startTime = Date.now();
-    gameState.endTime = null;
 
-    loadPage(gameState.startPage, false);
+    loadPage(state.gameState.startPage, false);
 });
 
 // Exposed function for multiplayer to start the game using the same logic
 window.startGameFromParty = async function({ startPage, targetPage, wikiLang, mode, partyCode, gamemode } = {}) {
-    const m = mode || "set";
-    gameState.mode = m;
-    gameState.gamemode = gamemode || "individual";
-    gameState.partyCode = partyCode || null;
+    const modeId = gamemode || "teamwork";
+    
+    // Set current gamemode in registry
+    const currentMode = modeRegistry.setCurrentMode(modeId);
 
     if (typeof setWikiLang === "function" && wikiLang) setWikiLang(wikiLang);
 
-    let start = (startPage && startPage.trim()) || (startPageInput.value || "").trim();
-    let target = (targetPage && targetPage.trim()) || (targetPageInput.value || "").trim();
+    // Initialize the gamemode with party params
+    await currentMode.initialize(state.gameState, {
+        startPage,
+        targetPage,
+        wikiLang,
+        partyCode,
+        getRandomPageTitle: modeId === "random" ? getRandomPageTitle : undefined
+    });
 
-    if (m === "random" || !start) start = await getRandomPageTitle();
-    if (m === "random" || !target) target = await getRandomPageTitle();
-
-    while (target === start) {
-        target = await getRandomPageTitle();
-    }
-
-    gameState.startPage = start;
-    gameState.targetPage = target;
-    gameState.clicks = 0;
-    clickCounterEl.textContent = 0;
-    gameState.history = [];
-
-    startModal.style.display = "none";
-
-    if (m === "timed") startTimer(360);
+    ui.clickCounterEl.textContent = 0;
+    ui.startModal.style.display = "none";
 
     updateSidebar();
-    gameState.startTime = Date.now();
-    gameState.endTime = null;
 
-    await loadPage(gameState.startPage, false);
+    await loadPage(state.gameState.startPage, false);
 };
 
 let tooltipTimeout;
 
-targetPageEl.addEventListener("mouseenter", async () => {
+ui.targetPageEl.addEventListener("mouseenter", async () => {
     tooltipTimeout = setTimeout(async () => {
-        const firstParagraph = await fetchFirstParagraph(gameState.targetPage);
+        const firstParagraph = await fetchFirstParagraph(state.gameState.targetPage);
         console.log("Fetched paragraph:", firstParagraph);
         
-        tooltip.textContent = firstParagraph;
+        ui.tooltip.textContent = firstParagraph;
 
-        const rect = targetPageEl.getBoundingClientRect();
-        tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
-        tooltip.style.left = `${rect.left + window.scrollX}px`;
+        const rect = ui.targetPageEl.getBoundingClientRect();
+        ui.tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
+        ui.tooltip.style.left = `${rect.left + window.scrollX}px`;
 
-        tooltip.classList.add("visible");
-        tooltip.classList.remove("hidden");
+        ui.tooltip.classList.add("visible");
+        ui.tooltip.classList.remove("hidden");
     }, 200);
 });
 
-targetPageEl.addEventListener("mouseleave", () => {
+ui.targetPageEl.addEventListener("mouseleave", () => {
     clearTimeout(tooltipTimeout);
-    tooltip.classList.remove("visible");
-    tooltip.classList.add("hidden");
+    ui.tooltip.classList.remove("visible");
+    ui.tooltip.classList.add("hidden");
 })
 
 // Win screen button
-newRoundBtn.addEventListener("click", () => {
-    winModal.classList.add("hidden");
+ui.newRoundBtn.addEventListener("click", () => {
+    ui.winModal.classList.add("hidden");
 
-    gameState.clicks = 0;
-    clickCounterEl.textContent = 0;
-    gameState.history = [];
-    startModal.style.display = "flex";
+    state.gameState.clicks = 0;
+    ui.clickCounterEl.textContent = 0;
+    state.gameState.history = [];
+    ui.startModal.style.display = "flex";
     // restore start/join buttons if they were hidden for a party host
     const startBtn = document.getElementById("start-game-btn");
     if (startBtn) startBtn.style.display = "";
@@ -233,13 +224,13 @@ newRoundBtn.addEventListener("click", () => {
     }
 })
 
-homeBtn.addEventListener("click", () => {
-    gameState.clicks = 0;
-    gameState.history = [];
-    clickCounterEl.textContent = 0;
+ui.homeBtn.addEventListener("click", () => {
+    state.gameState.clicks = 0;
+    state.gameState.history = [];
+    ui.clickCounterEl.textContent = 0;
 
-    winModal.classList.add("hidden");
-    startModal.style.display = "flex";
+    ui.winModal.classList.add("hidden");
+    ui.startModal.style.display = "flex";
     // restore start/join buttons if they were hidden for a party host
     const startBtn2 = document.getElementById("start-game-btn");
     if (startBtn2) startBtn2.style.display = "";
@@ -256,5 +247,5 @@ homeBtn.addEventListener("click", () => {
 });
 
 // Start
-startModal.style.display = "flex";
-loadPage(gameState.startPage, false);
+ui.startModal.style.display = "flex";
+loadPage(state.gameState.startPage, false);

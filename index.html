@@ -22,46 +22,66 @@
 
     <div id="start-modal">
         <div id="start-box">
-            <h2 id="start-header">WikiHop</h2>
+            <h1 id="start-header">WikiHop</h1>
             <p>Choose your start and target pages</p>
 
             <form id="start-form">
-                <label for="wiki-lang">Wikipedia language</label>
-                <select id="wiki-lang">
-                    <option value="en" selected>English</option>
-                    <option value="fi">Finnish</option>
-                    <option value="de">German</option>
-                    <option value="sv">Swedish</option>
-                </select>
-                <br>
-                <label for="gamemode">Game Mode:</label>
-                <select id="gamemode">
-                    <option value="set">Set Run</option>
-                    <option value="random">Random</option>
-                    <option value="timed">Time Attack</option>
-                </select>
-                <br>
-                <label for="start-menu">Start Page:</label>
-                <br>
-                <input type="text" id="start-menu" placeholder="e.g., Finland" />
-                <br>
-                <label for="target-menu">Target Page:</label>
-                <input type="text" id="target-menu" placeholder="e.g., Pakkala" />
+                <div class="dropdowns-container">
+                    <div class="dropdown-section">
+                        <label for="wiki-lang">Wikipedia language</label>
+                        <select id="wiki-lang">
+                            <option value="en" selected>English</option>
+                            <option value="fi">Finnish</option>
+                            <option value="de">German</option>
+                            <option value="sv">Swedish</option>
+                        </select>
+                    </div>
+                    <div class="dropdown-section">
+                        <label for="gamemode">Game Mode:</label>
+                        <select id="gamemode">
+                            <option value="set">Set Run</option>
+                            <option value="random" selected>Random</option>
+                            <option value="timed">Time Attack</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="page-input-section">
+                    <label for="start-menu">Start Page:</label>
+                    <input type="text" id="start-menu" placeholder="e.g., Finland" />
+                </div>
+                <div class="page-input-section">
+                    <label for="target-menu">Target Page:</label>
+                    <input type="text" id="target-menu" placeholder="e.g., Pakkala" />
+                </div>
 
-                <button id="start-game-btn">Start Game</button>
+                <button type="submit" id="start-game-btn">Start Game</button>
             </form>
-            <br>
-            <button id="create-party-btn">Create Party</button>
-            <button id="join-party-btn">Join Party</button>
-            <br>
+
+            <div class="button-container">
+                <button id="create-party-btn">Create Party</button>
+                <button id="join-party-btn">Join Party</button>
+            </div>
             <div id="party-lobby-modal" class="hidden">
-                <p>Your party code: <span id="party-code"></span></p>
-                <label for="party-gamemode">Game Mode:</label>
-                <select id="party-gamemode">
-                    <option value="teamwork">Teamwork</option>
-                    <option value="competition">Competition</option>
-                </select>
-                <br>
+                <div class="party-lobby-content">
+                    <h3>Party Lobby</h3>
+                    
+                    <div class="party-info">
+                        <p><strong>Party Code:</strong></p>
+                        <p class="party-code-display"><span id="party-code"></span></p>
+                    </div>
+
+                    <div class="party-gamemode">
+                        <label for="party-gamemode">Game Mode:</label>
+                        <select id="party-gamemode">
+                            <option value="teamwork">Teamwork</option>
+                            <option value="competition">Competition</option>
+                        </select>
+                    </div>
+
+                    <div class="party-buttons">
+                        <!-- Buttons added dynamically by JavaScript -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -120,7 +140,7 @@
     <!-- Javascript -->
     <script type="module" src="js/multiplayer.js"></script>
     <script src="js/api.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/game.js"></script>
+    <script type="module" src="js/ui.js"></script>
+    <script type="module" src="js/game.js"></script>
     <script src="js/langs.js"></script>
 </body>

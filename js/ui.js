@@ -1,8 +1,8 @@
-function renderPage(page) {
-    const titleEl = document.getElementById("page-title");
-    const contentEl = document.getElementById("content");
+import { ui } from "./ui/uiElements.js";
+import { loadPage } from "./game.js";
 
-    titleEl.textContent = page.title;
+function renderPage(page) {
+    ui.titleEl.textContent = page.title;
 
     const temp = document.createElement("div");
     temp.innerHTML = page.text["*"];
@@ -10,7 +10,7 @@ function renderPage(page) {
     const article = temp.querySelector(".mw-parser-output");
 
     if (!article) {
-        contentEl.textContent = "Failed to load article content.";
+        ui.contentEl.textContent = "Failed to load article content.";
         return;
     }
 
@@ -42,8 +42,8 @@ function renderPage(page) {
 
     removeEmptySections(article);
 
-    contentEl.innerHTML = "";
-    contentEl.appendChild(article);
+    ui.contentEl.innerHTML = "";
+    ui.contentEl.appendChild(article);
 
     // Always scroll to top on page load
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -100,19 +100,16 @@ function removeEmptySections(article) {
     });
 }
 
-async function renderPageWithTransition(page) {
-    const titleEl = document.getElementById("page-title");
-    const contentEl = document.getElementById("content");
-
-    contentEl.style.opacity = 0;
-    titleEl.style.opacity = 0;
+export async function renderPageWithTransition(page) {
+    ui.contentEl.style.opacity = 0;
+    ui.titleEl.style.opacity = 0;
 
     await new Promise(r => setTimeout(r, 400));
 
     renderPage(page);
 
     requestAnimationFrame(() => {
-        contentEl.style.opacity = 1;
-        titleEl.style.opacity = 1;
+        ui.contentEl.style.opacity = 1;
+        ui.titleEl.style.opacity = 1;
     });
 }

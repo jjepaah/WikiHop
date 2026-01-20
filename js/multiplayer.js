@@ -2,18 +2,14 @@
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
 import { doc, setDoc, onSnapshot, getDoc, serverTimestamp, collection, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 import { db } from "./firebase.js";
+// UI Elements
+import { ui } from "./ui/uiElements.js";
+// Gamemode registry
+import { modeRegistry } from "./gamemodes/modeRegistry.js";
 
 // Create anonymous user
 const auth = getAuth();
 await signInAnonymously(auth);
-
-// Buttons / UI
-const createPartyBtn = document.getElementById("create-party-btn");
-const joinPartyBtn = document.getElementById("join-party-btn");
-const partyCodeEl = document.getElementById("party-code");
-const partyLobbyModal = document.getElementById("party-lobby-modal");
-const startHeader = document.getElementById("start-header");
-const partyGamemodeSelect = document.getElementById("party-gamemode");
 
 // lobby listeners
 let unsubscribePlayers = null;
@@ -22,86 +18,21 @@ let localStartedAt = null;
 let startPartyBtn = null;
 let leavePartyBtn = null;
 
-//----------------------------------------------
-// Gamemode Configuration
-//----------------------------------------------
-
 /**
- * Gamemode definitions
- * Each gamemode can have custom properties and behaviors
- * Add new gamemodes here for easy maintenance and expansion
+ * Initialize party gamemode dropdown with multiplayer modes
+ * Uses the gamemode registry to get available multiplayer modes
  */
-const GAMEMODES = {
-    teamwork: {
-        id: "teamwork",
-        label: "Teamwork",
-        description: "Work together to reach the target",
-        rules: {
-            sharedClicks: true,
-            sharedTimer: true,
-            competitiveScoring: false,
-            allowCollaboration: true
-        },
-        colors: {
-            primary: "#4CAF50",
-            secondary: "#81C784"
-        }
-    },
-    competition: {
-        id: "competition",
-        label: "Competition",
-        description: "Race against other players",
-        rules: {
-            sharedClicks: false,
-            sharedTimer: true,
-            competitiveScoring: true,
-            allowCollaboration: false
-        },
-        colors: {
-            primary: "#FF6B6B",
-            secondary: "#FF8A8A"
-        }
-    }
-};
-
-/**
- * Get all gamemode IDs for dropdown/UI
- */
-function getAvailableGamemodes() {
-    return Object.values(GAMEMODES).map(mode => ({
-        id: mode.id,
-        label: mode.label,
-        description: mode.description
-    }));
-}
-
-/**
- * Get gamemode configuration by ID
- */
-function getGamemode(gamemodeId) {
-    return GAMEMODES[gamemodeId] || GAMEMODES.teamwork;
-}
-
-/**
- * Check if a specific rule is enabled for a gamemode
- */
-function isRuleEnabled(gamemodeId, ruleName) {
-    const gamemode = getGamemode(gamemodeId);
-    return gamemode.rules[ruleName] === true;
-}
-
-// Initialize gamemode dropdown
 function initializeGamemodeDropdown() {
-    const gamemodes = getAvailableGamemodes();
-    partyGamemodeSelect.innerHTML = "";
-    gamemodes.forEach(mode => {
+    const multiplayerModes = modeRegistry.getMultiplayerModes();
+    ui.partyGamemodeSelect.innerHTML = "";
+    multiplayerModes.forEach(mode => {
         const option = document.createElement("option");
         option.value = mode.id;
         option.textContent = mode.label;
         option.title = mode.description;
-        partyGamemodeSelect.appendChild(option);
+        ui.partyGamemodeSelect.appendChild(option);
     });
-    partyGamemodeSelect.value = "teamwork"; // Set default
+    ui.partyGamemodeSelect.value = "teamwork"; // Set default
 }
 
 // Initialize on load
@@ -120,7 +51,7 @@ async function createParty(playerName, wikiLang) {
     const uid = auth.currentUser.uid;
     
     const partyRef = doc(db, "parties", code);
-    const gamemode = partyGamemodeSelect.value || "teamwork";
+    const gamemode = ui.partyGamemodeSelect.value || "teamwork";
 
     await setDoc(partyRef, {
         code,
@@ -218,11 +149,11 @@ async function startParty(partyCode) {
 async function openPartyLobby(code) {
     const partyRef = doc(db, "parties", code);
 
-    partyCodeEl.textContent = code;
-    startHeader.textContent = "WikiHop - Party Lobby";
-    partyLobbyModal.style.display = "flex";
-    partyLobbyModal.classList.add("visible");
-    partyLobbyModal.classList.remove("hidden");
+    ui.partyCodeEl.textContent = code;
+    ui.startHeader.textContent = "WikiHop - Party Lobby";
+    ui.partyLobbyModal.style.display = "flex";
+    ui.partyLobbyModal.classList.add("visible");
+    ui.partyLobbyModal.classList.remove("hidden");
 
     // expose current party code for other helpers
     try { window.CURRENT_PARTY = code; } catch (e) {}
@@ -238,53 +169,53 @@ async function openPartyLobby(code) {
 
     // Set gamemode dropdown to current party gamemode
     if (partyData && partyData.gamemode) {
-        partyGamemodeSelect.value = partyData.gamemode;
+        ui.partyGamemodeSelect.value = partyData.gamemode;
     }
 
     // Add listener for gamemode changes (only host can change)
     const handleGamemodeChange = async () => {
         if (partyData && partyData.hostUid === auth.currentUser.uid) {
             await updateDoc(partyRef, {
-                gamemode: partyGamemodeSelect.value
+                gamemode: ui.partyGamemodeSelect.value
             });
         }
     };
-    partyGamemodeSelect.removeEventListener("change", handleGamemodeChange);
-    partyGamemodeSelect.addEventListener("change", handleGamemodeChange);
+    ui.partyGamemodeSelect.removeEventListener("change", handleGamemodeChange);
+    ui.partyGamemodeSelect.addEventListener("change", handleGamemodeChange);
+
+    // Get button container
+    const buttonContainer = ui.partyLobbyModal.querySelector(".party-buttons");
+    if (buttonContainer) {
+        buttonContainer.innerHTML = ""; // Clear existing buttons
+    }
 
     // create start button only for host (do not create for others)
     if (partyData && partyData.hostUid === auth.currentUser.uid) {
         if (!startPartyBtn) {
             startPartyBtn = document.createElement("button");
-            startPartyBtn.textContent = "Start Party";
-            startPartyBtn.style.marginTop = "8px";
+            startPartyBtn.textContent = "Start Game";
             startPartyBtn.addEventListener("click", async () => {
                 await startParty(code);
             });
-            partyLobbyModal.appendChild(startPartyBtn);
-        } else {
-            if (!partyLobbyModal.contains(startPartyBtn)) partyLobbyModal.appendChild(startPartyBtn);
-            startPartyBtn.style.display = "inline-block";
         }
+        if (buttonContainer) buttonContainer.appendChild(startPartyBtn);
+        // Enable gamemode dropdown for host
+        ui.partyGamemodeSelect.disabled = false;
     } else {
-        if (startPartyBtn && partyLobbyModal.contains(startPartyBtn)) {
-            startPartyBtn.remove();
-            startPartyBtn = null;
-        }
+        startPartyBtn = null;
         // Disable gamemode dropdown for non-host players
-        partyGamemodeSelect.disabled = true;
+        ui.partyGamemodeSelect.disabled = true;
     }
 
-    // create a Leave Party button for everyone (only one instance)
+    // create a Leave Party button for everyone
     if (!leavePartyBtn) {
         leavePartyBtn = document.createElement("button");
         leavePartyBtn.textContent = "Leave Party";
-        leavePartyBtn.style.marginTop = "8px";
         leavePartyBtn.addEventListener("click", async () => {
             await leaveParty();
         });
     }
-    if (!partyLobbyModal.contains(leavePartyBtn)) partyLobbyModal.appendChild(leavePartyBtn);
+    if (buttonContainer) buttonContainer.appendChild(leavePartyBtn);
 
     // For joiners: disable all start-menu controls and only show party code.
     // For host: keep menu available (but hide create/join/start as before).
@@ -310,11 +241,11 @@ async function openPartyLobby(code) {
 
         // additionally toggle individual buttons for clarity
         if (isHost) {
-            if (joinPartyBtn) joinPartyBtn.style.display = "none";
+            if (ui.joinPartyBtn) ui.joinPartyBtn.style.display = "none";
             if (startBtn) startBtn.style.display = "none";
             if (createBtn) createBtn.style.display = "none";
         } else {
-            if (joinPartyBtn) joinPartyBtn.style.display = "none";
+            if (ui.joinPartyBtn) ui.joinPartyBtn.style.display = "none";
             if (startBtn) startBtn.style.display = "none";
             if (createBtn) createBtn.style.display = "none";
         }
@@ -335,27 +266,28 @@ async function openPartyLobby(code) {
         console.log("Party data:", party);
 
         // Update gamemode dropdown if changed by host
-        if (party.gamemode && party.gamemode !== partyGamemodeSelect.value) {
-            partyGamemodeSelect.value = party.gamemode;
+        if (party.gamemode && party.gamemode !== ui.partyGamemodeSelect.value) {
+            ui.partyGamemodeSelect.value = party.gamemode;
         }
 
         // ensure button exists only for host
+        const buttonContainer = ui.partyLobbyModal.querySelector(".party-buttons");
         if (party.hostUid === auth.currentUser.uid) {
             if (!startPartyBtn) {
                 startPartyBtn = document.createElement("button");
                 startPartyBtn.textContent = "Start Game";
-                startPartyBtn.style.marginTop = "8px";
                 startPartyBtn.addEventListener("click", async () => {
                     await startParty(code);
                 });
-                partyLobbyModal.appendChild(startPartyBtn);
             }
-            startPartyBtn.style.display = "inline-block";
+            if (buttonContainer && !buttonContainer.contains(startPartyBtn)) {
+                buttonContainer.insertBefore(startPartyBtn, buttonContainer.firstChild);
+            }
         } else {
-            if (startPartyBtn && partyLobbyModal.contains(startPartyBtn)) {
+            if (startPartyBtn && buttonContainer && buttonContainer.contains(startPartyBtn)) {
                 startPartyBtn.remove();
-                startPartyBtn = null;
             }
+            startPartyBtn = null;
         }
 
         // when party is started -> trigger local game start (only once)
@@ -462,11 +394,14 @@ async function leaveParty() {
 
     // hide lobby modal
     try {
-        partyLobbyModal.classList.remove("visible");
-        partyLobbyModal.classList.add("hidden");
-        partyLobbyModal.style.display = "none";
-        partyGamemodeSelect.disabled = false;
-        partyGamemodeSelect.value = "teamwork"; // Reset to default
+        ui.partyLobbyModal.classList.remove("visible");
+        ui.partyLobbyModal.classList.add("hidden");
+        ui.partyLobbyModal.style.display = "none";
+        ui.partyGamemodeSelect.disabled = false;
+        ui.partyGamemodeSelect.value = "teamwork"; // Reset to default
+        
+        // Reset header title back to "WikiHop"
+        ui.startHeader.textContent = "WikiHop";
     } catch (e) {}
 
     // restore start-box UI and main buttons
@@ -492,7 +427,7 @@ async function leaveParty() {
 // Event listeners
 //----------------------------------------------
 
-createPartyBtn.addEventListener("click", async () => {
+ui.createPartyBtn.addEventListener("click", async () => {
     const playerName = prompt("Enter your name:") || "Anonymous";
     const wikiLang = typeof getWikiLang === "function" ? getWikiLang() : (document.getElementById("wiki-lang") || {}).value || "en";
     
@@ -500,7 +435,7 @@ createPartyBtn.addEventListener("click", async () => {
     await openPartyLobby(code);
 });
 
-joinPartyBtn.addEventListener("click", async () => {
+ui.joinPartyBtn.addEventListener("click", async () => {
     const raw = prompt("Enter party code:");
     const code = raw ? raw.trim().toUpperCase() : "";
     if (!code) return;
