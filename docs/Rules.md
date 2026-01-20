@@ -13,8 +13,11 @@ Welcome to **WikiHop**! This document explains the rules for each game mode, sco
 - [Tips & Tricks](#tips--tricks)
 
 ---
+
 ## Main Goal
 Reach the target Wikipedia page from the start page by clicking only on links in the article text.
+
+---
 
 ## Single Player
 Play locally and try to get from start to target as fast as possible or with as few clicks as possible.
