@@ -4,7 +4,7 @@ Welcome to **WikiHop**! This document explains the rules for each game mode, sco
 
 ---
 
-## === Table of Contents ===
+## Table of Contents
 
 - [Single Player](#single-player)
 - [Local Game Modes](#local-game-modes)
