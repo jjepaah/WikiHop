@@ -3,6 +3,9 @@ import { renderPageWithTransition } from "./ui.js";
 import * as state from "./core/gameState.js";
 import { modeRegistry } from "./gamemodes/modeRegistry.js";
 
+// Track timed mode timeout
+let timerTimeout = null;
+
 ui.startPageEl.textContent = state.gameState.startPage;
 ui.targetPageEl.textContent = state.gameState.targetPage;
 ui.clickCounterEl.textContent = state.gameState.clicks;
@@ -40,6 +43,12 @@ export async function loadPage(title, isUserClick = true) {
 
 async function checkWin() {
     if (state.gameState.currentPage === state.gameState.targetPage) {
+        // Clear any pending timeout for timed mode
+        if (timerTimeout) {
+            clearTimeout(timerTimeout);
+            timerTimeout = null;
+        }
+
         ui.finalClicksEl.textContent = state.gameState.clicks;
         ui.winModal.classList.remove("hidden");
         disableAllLinks();
@@ -47,9 +56,9 @@ async function checkWin() {
         state.gameState.endTime = Date.now();
 
         const runTimeMs = state.gameState.endTime - state.gameState.startTime;
-        const runTimeSeconds = Math.round(runTimeMs / 1000);
+        const runTimeSeconds = (runTimeMs / 1000).toFixed(2);
 
-        ui.finalTimeEl.textContent = `${runTimeSeconds} seconds`;
+        ui.finalTimeEl.textContent = `${runTimeSeconds}s`;
 
         // Call gamemode's onWin handler
         try {
@@ -100,12 +109,30 @@ function disableAllLinks() {
 // Toggle page inputs visibility based on gamemode selection
 ui.gamemodeSelect.addEventListener("change", () => {
     const pageInputSections = document.querySelectorAll(".page-input-section");
+    const timeLimitSection = document.getElementById("time-limit-section");
     const isRandomMode = ui.gamemodeSelect.value === "random";
+    const isTimedMode = ui.gamemodeSelect.value === "timed";
     
     pageInputSections.forEach(section => {
         section.style.display = isRandomMode ? "none" : "flex";
     });
+    
+    // Show time limit section only for timed mode
+    if (timeLimitSection) {
+        timeLimitSection.classList.toggle("hidden", !isTimedMode);
+    }
 });
+
+// Handle custom time limit input visibility
+const timeLimitPreset = document.getElementById("time-limit-preset");
+if (timeLimitPreset) {
+    timeLimitPreset.addEventListener("change", () => {
+        const customTimeWrapper = document.getElementById("custom-time-input-wrapper");
+        if (customTimeWrapper) {
+            customTimeWrapper.style.display = timeLimitPreset.value === "custom" ? "block" : "none";
+        }
+    });
+}
 
 // Main menu start button - single player
 ui.startForm.addEventListener("submit", async e => {
@@ -121,12 +148,47 @@ ui.startForm.addEventListener("submit", async e => {
     let start = ui.startPageInput.value.trim();
     let target = ui.targetPageInput.value.trim();
 
-    // For random mode, generate random pages if not provided
-    if (modeId === "random" || !start) start = await getRandomPageTitle();
-    if (modeId === "random" || !target) target = await getRandomPageTitle();
-
-    while (target === start) {
+    // Handle page generation based on gamemode
+    if (modeId === "random") {
+        // Random mode: always generate both pages
+        start = await getRandomPageTitle();
         target = await getRandomPageTitle();
+        while (target === start) {
+            target = await getRandomPageTitle();
+        }
+    } else if (modeId === "set" || modeId === "timed") {
+        // Set Run and Time Attack: flexible input logic
+        // If only start is provided, generate target
+        if (start && !target) {
+            target = await getRandomPageTitle();
+        }
+        // If only target is provided, generate start
+        else if (!start && target) {
+            start = await getRandomPageTitle();
+        }
+        // If neither provided, generate both
+        else if (!start && !target) {
+            start = await getRandomPageTitle();
+            target = await getRandomPageTitle();
+        }
+        // If both provided, use them as-is
+        
+        // Ensure start and target are different
+        while (target === start) {
+            target = await getRandomPageTitle();
+        }
+    }
+
+    // For timed mode, get the custom time limit if provided
+    let timeLimitMinutes = 5; // default
+    if (modeId === "timed") {
+        const timeLimitPreset = document.getElementById("time-limit-preset");
+        if (timeLimitPreset && timeLimitPreset.value === "custom") {
+            const customTimeInput = document.getElementById("custom-time-input");
+            if (customTimeInput && customTimeInput.value) {
+                timeLimitMinutes = parseInt(customTimeInput.value) || 5;
+            }
+        }
     }
 
     // Initialize the gamemode with necessary params
@@ -134,13 +196,34 @@ ui.startForm.addEventListener("submit", async e => {
         startPage: start,
         targetPage: target,
         wikiLang: ui.langSelect.value,
-        getRandomPageTitle
+        getRandomPageTitle,
+        timeLimitMinutes
     });
 
-    // For timed mode, set up timer
-    if (modeId === "timed") {
-        startTimer(360);
+    // For timed mode, set up timeout to end game after time limit
+    if (timerTimeout) {
+        clearTimeout(timerTimeout);
     }
+    if (modeId === "timed") {
+        const timeoutMs = timeLimitMinutes * 60 * 1000; // Convert to milliseconds
+        timerTimeout = setTimeout(() => {
+            // Time's up - show game over
+            if (state.gameState.currentPage !== state.gameState.targetPage) {
+                ui.finalClicksEl.textContent = state.gameState.clicks;
+                ui.finalTimeEl.textContent = timeLimitMinutes + "m";
+                ui.winModal.classList.remove("hidden");
+                disableAllLinks();
+                // Clean up the gamemode
+                const currentMode = modeRegistry.getCurrentMode();
+                if (currentMode && currentMode.cleanup) {
+                    currentMode.cleanup(state.gameState);
+                }
+            }
+        }, timeoutMs);
+    }
+
+    // For timed mode, the timer is started inside initialize
+    // For other modes, we don't need separate timer setup
 
     ui.clickCounterEl.textContent = 0;
     ui.startModal.style.display = "none";

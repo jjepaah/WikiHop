@@ -23,6 +23,7 @@ export class RandomMode extends BaseModeHandler {
             },
             isMultiplayer: false
         });
+        this.timerInterval = null;
     }
 
     async initialize(gameState, params = {}) {
@@ -50,6 +51,16 @@ export class RandomMode extends BaseModeHandler {
 
         gameState.startPage = startPage;
         gameState.targetPage = targetPage;
+
+        // Show timer and start updating it
+        const timerDisplay = document.getElementById("timer-display");
+        const timerEl = document.getElementById("timer");
+        if (timerDisplay) timerDisplay.classList.remove("hidden");
+        
+        this.timerInterval = setInterval(() => {
+            const elapsed = (Date.now() - gameState.startTime) / 1000;
+            if (timerEl) timerEl.textContent = elapsed.toFixed(2) + "s";
+        }, 10);
     }
 
     async onPageLoad(gameState, currentPage) {
@@ -71,6 +82,12 @@ export class RandomMode extends BaseModeHandler {
     }
 
     async cleanup(gameState) {
-        // No special cleanup needed
+        // Stop and hide timer
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+        const timerDisplay = document.getElementById("timer-display");
+        if (timerDisplay) timerDisplay.classList.add("hidden");
     }
 }

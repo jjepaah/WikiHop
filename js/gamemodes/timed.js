@@ -22,43 +22,36 @@ export class TimedMode extends BaseModeHandler {
             },
             isMultiplayer: false
         });
-        this.timerDuration = 360; // 6 minutes in seconds
+        this.timerDuration = 300; // 5 minutes in seconds (default)
+        this.timerInterval = null;
         this.onTimerEnd = null;
     }
 
     async initialize(gameState, params = {}) {
-        const { getRandomPageTitle, startTimer } = params;
-        
-        if (!getRandomPageTitle || !startTimer) {
-            throw new Error("Timed mode requires getRandomPageTitle and startTimer functions");
-        }
+        const { startPage, targetPage, timeLimitMinutes } = params;
+
+        // Set time duration based on parameter or use default 5 minutes
+        this.timerDuration = (timeLimitMinutes || 5) * 60; // Convert minutes to seconds
 
         gameState.mode = "timed";
         gameState.gamemode = "individual";
+        gameState.startPage = startPage;
+        gameState.targetPage = targetPage;
         gameState.clicks = 0;
         gameState.history = [];
         gameState.startTime = Date.now();
         gameState.endTime = null;
         gameState.partyCode = null;
 
-        // Generate random start and target
-        let startPage = await getRandomPageTitle();
-        let targetPage = await getRandomPageTitle();
-
-        while (targetPage === startPage) {
-            targetPage = await getRandomPageTitle();
-        }
-
-        gameState.startPage = startPage;
-        gameState.targetPage = targetPage;
-
-        // Start the timer
-        startTimer(this.timerDuration, () => {
-            // Timer ended callback - this will be triggered when time runs out
-            if (this.onTimerEnd) {
-                this.onTimerEnd(gameState);
-            }
-        });
+        // Show timer and start updating it
+        const timerDisplay = document.getElementById("timer-display");
+        const timerEl = document.getElementById("timer");
+        if (timerDisplay) timerDisplay.classList.remove("hidden");
+        
+        this.timerInterval = setInterval(() => {
+            const elapsed = (Date.now() - gameState.startTime) / 1000;
+            if (timerEl) timerEl.textContent = elapsed.toFixed(2) + "s";
+        }, 10);
     }
 
     async onPageLoad(gameState, currentPage) {
@@ -96,6 +89,12 @@ export class TimedMode extends BaseModeHandler {
     }
 
     async cleanup(gameState) {
-        // Timer should be stopped by the game loop
+        // Stop and hide timer
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+        const timerDisplay = document.getElementById("timer-display");
+        if (timerDisplay) timerDisplay.classList.add("hidden");
     }
 }

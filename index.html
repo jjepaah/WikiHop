@@ -8,6 +8,7 @@
         <aside id="sidebar">
             <h2 id="home-btn">WikiHop</h2>
             <p><strong id="click-counter-label">Clicks:</strong> <span id="click-counter">0</span></p>
+            <p id="timer-display" class="hidden"><strong id="timer-label">Time:</strong> <span id="timer">0.00s</span></p>
             <p><strong id="start-page-label">Start:</strong> <span id="start-page">Loading...</span></p>
             <p><strong id="target-page-label">Target:</strong> <span id="target-page">Loading...</span></p>
         </aside>
@@ -45,6 +46,21 @@
                         </select>
                     </div>
                 </div>
+                <div id="time-limit-section" class="time-limit-section hidden">
+                    <div class="dropdowns-container">
+                        <div class="dropdown-section">
+                            <label for="time-limit-preset">Time Limit:</label>
+                            <select id="time-limit-preset">
+                                <option value="standard" selected>Standard (5 min)</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+                        <div class="dropdown-section" id="custom-time-input-wrapper" style="display: none;">
+                            <label for="custom-time-input">Minutes:</label>
+                            <input type="number" id="custom-time-input" placeholder="5" min="1" max="60" value="5" />
+                        </div>
+                    </div>
+                </div>
                 <div class="page-input-section">
                     <label for="start-menu">Start Page:</label>
                     <input type="text" id="start-menu" placeholder="e.g., Finland" />
@@ -63,8 +79,6 @@
             </div>
             <div id="party-lobby-modal" class="hidden">
                 <div class="party-lobby-content">
-                    <h3>Party Lobby</h3>
-                    
                     <div class="party-info">
                         <p><strong>Party Code:</strong></p>
                         <p class="party-code-display"><span id="party-code"></span></p>

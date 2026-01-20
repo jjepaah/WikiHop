@@ -11,6 +11,8 @@ export const ui = {
     startHeader: document.getElementById("start-header"),               // 
     partyGamemodeSelect: document.getElementById("party-gamemode"),     // 
     clickCounterEl: document.getElementById("click-counter"),           // 
+    timerEl: document.getElementById("timer"),                         // 
+    timerDisplay: document.getElementById("timer-display"),             // 
     startPageEl: document.getElementById("start-page"),                 // 
     targetPageEl: document.getElementById("target-page"),               // 
     startModal: document.getElementById("start-modal"),                 // 

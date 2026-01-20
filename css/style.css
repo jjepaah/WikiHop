@@ -236,6 +236,25 @@ p, li, table {
     border-color: #90caf9;
 }
 
+#time-limit-preset,
+#custom-time-input {
+    width: 100%;
+    padding: 0.7rem;
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    border: 1px solid #333;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    box-sizing: border-box;
+    margin-bottom: 1rem;
+}
+
+#time-limit-preset:hover,
+#custom-time-input:hover {
+    border-color: #90caf9;
+}
+
 #start-form label {
     display: block;
     margin-bottom: 0.5rem;
@@ -252,6 +271,15 @@ p, li, table {
 
 .dropdown-section {
     flex: 1;
+}
+
+/* Time limit section - hidden by default */
+.time-limit-section {
+    margin-bottom: 1rem;
+}
+
+.time-limit-section.hidden {
+    display: none !important;
 }
 
 /* Page input sections - hidden by default for random mode */
@@ -369,17 +397,20 @@ p, li, table {
 
 #win-box button {
     margin-top: 1rem;
-    padding: 0.5rem 1rem;
+    padding: 0.8rem 1.5rem;
     border: none;
     border-radius: 6px;
     background-color: #90caf9;
     color: #121212;
     font-weight: bold;
     cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
 }
 
 #win-box button:hover {
     background-color: #64b5f6;
+    transform: translateY(-2px);
 }
 
 a[style*="not-allowed"] {
