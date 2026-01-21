@@ -97,8 +97,17 @@
                     </div>
                 </div>
             </div>
+            
+        </div>
+        <div id="leaderboard-box">
+            <h2>Leaderboard - Random Mode</h2>
+            <div id="leaderboard-content">
+                <p>Loading leaderboard...</p>
+            </div>
         </div>
     </div>
+
+    
 
     <div id="win-modal" class="hidden">
         <div id="win-box">
@@ -113,6 +122,69 @@
     <script type="module" src="js/firestore.js"></script>
 
     <!-- Javascript -->
+    <script type="module">
+        // Load leaderboard on page load
+        async function loadLeaderboard() {
+            const leaderboardContent = document.getElementById('leaderboard-content');
+            try {
+                const scores = await window.getRandomLeaderboard();
+                if (scores.length === 0) {
+                    leaderboardContent.innerHTML = '<p>No scores yet. Be the first!</p>';
+                    return;
+                }
+                
+                let html = '<table class="leaderboard-table">';
+                html += '<thead><tr><th>#</th><th>Player</th><th>Clicks</th><th>Time</th></tr></thead>';
+                html += '<tbody>';
+                
+                scores.forEach((score, index) => {
+                    const time = (score.timeMs / 1000).toFixed(2);
+                    html += `<tr class="leaderboard-row" data-index="${index}">`;
+                    html += `<td>${index + 1}</td>`;
+                    html += `<td class="player-cell">`;
+                    html += `<div class="player-name">${score.player || 'Anonymous'}</div>`;
+                    html += `<div class="player-details hidden">`;
+                    html += `<div class="route-info"><strong>Start:</strong> ${score.startPage || 'N/A'}</div>`;
+                    html += `<div class="route-info"><strong>Target:</strong> ${score.targetPage || 'N/A'}</div>`;
+                    html += `</div>`;
+                    html += `</td>`;
+                    html += `<td>${score.clicks}</td>`;
+                    html += `<td>${time}s</td>`;
+                    html += `</tr>`;
+                });
+                
+                html += '</tbody></table>';
+                leaderboardContent.innerHTML = html;
+                
+                // Add click handlers to rows
+                document.querySelectorAll('.leaderboard-row').forEach(row => {
+                    row.addEventListener('click', function() {
+                        const details = this.querySelector('.player-details');
+                        const wasExpanded = !details.classList.contains('hidden');
+                        
+                        // Close all other expanded rows
+                        document.querySelectorAll('.player-details').forEach(d => d.classList.add('hidden'));
+                        document.querySelectorAll('.leaderboard-row').forEach(r => r.classList.remove('expanded'));
+                        
+                        // Toggle this row
+                        if (!wasExpanded) {
+                            details.classList.remove('hidden');
+                            this.classList.add('expanded');
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+                leaderboardContent.innerHTML = '<p>Error loading leaderboard</p>';
+            }
+        }
+        
+        // Load leaderboard when page loads
+        window.addEventListener('load', loadLeaderboard);
+        
+        // Reload leaderboard when game ends
+        window.reloadLeaderboard = loadLeaderboard;
+    </script>
     <script type="module" src="js/multiplayer.js"></script>
     <script src="js/api.js"></script>
     <script type="module" src="js/ui.js"></script>

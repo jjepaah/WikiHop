@@ -79,6 +79,11 @@ async function checkWin() {
 
                 const leaderboard = await getRandomLeaderboard();
                 console.log("Top 10 scores:", leaderboard);
+                
+                // Reload the leaderboard display
+                if (window.reloadLeaderboard) {
+                    window.reloadLeaderboard();
+                }
             }
 
             // Handle teamwork notification
