@@ -485,7 +485,28 @@ ui.createPartyBtn.addEventListener("click", async () => {
     
     // If guest mode or no username, prompt
     if (window.isGuestMode || !playerName) {
-        playerName = prompt("Enter your name:") || "Anonymous";
+        while (true) {
+            playerName = prompt("Enter your name:") || "Anonymous";
+            
+            // If they chose Anonymous, allow it
+            if (playerName === "Anonymous") break;
+            
+            // Check if username is taken
+            if (window.checkUsernameAvailable) {
+                const isAvailable = await window.checkUsernameAvailable(playerName);
+                if (!isAvailable) {
+                    const tryAgain = confirm(`Username "${playerName}" is already registered. Please choose a different name or sign in with that account.\n\nClick OK to try a different name, or Cancel to use "Anonymous".`);
+                    if (!tryAgain) {
+                        playerName = "Anonymous";
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
     }
     
     const wikiLang = typeof getWikiLang === "function" ? getWikiLang() : (document.getElementById("wiki-lang") || {}).value || "en";
@@ -503,7 +524,28 @@ ui.joinPartyBtn.addEventListener("click", async () => {
     
     // If guest mode or no username, prompt
     if (window.isGuestMode || !playerName) {
-        playerName = prompt("Enter your name:") || "Anonymous";
+        while (true) {
+            playerName = prompt("Enter your name:") || "Anonymous";
+            
+            // If they chose Anonymous, allow it
+            if (playerName === "Anonymous") break;
+            
+            // Check if username is taken
+            if (window.checkUsernameAvailable) {
+                const isAvailable = await window.checkUsernameAvailable(playerName);
+                if (!isAvailable) {
+                    const tryAgain = confirm(`Username "${playerName}" is already registered. Please choose a different name or sign in with that account.\n\nClick OK to try a different name, or Cancel to use "Anonymous".`);
+                    if (!tryAgain) {
+                        playerName = "Anonymous";
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
     }
     
     try {
