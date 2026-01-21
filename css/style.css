@@ -452,6 +452,15 @@ p, li, table {
     background-color: #e53935 !important;
 }
 
+.signin-btn {
+    background-color: #90caf9 !important;
+    color: #121212 !important;
+}
+
+.signin-btn:hover {
+    background-color: #64b5f6 !important;
+}
+
 #auth-section h3 {
     margin-top: 0;
     margin-bottom: 1rem;

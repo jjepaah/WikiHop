@@ -4,6 +4,7 @@ window.updateUserUI = function(user) {
     const gameSetupSection = document.getElementById('game-setup-section');
     const currentUsernameEl = document.getElementById('current-username');
     const logoutBtn = document.getElementById('logout-btn');
+    const signinBtn = document.getElementById('signin-btn');
     
     if (user && user.username) {
         authSection?.classList.add('hidden');
@@ -13,6 +14,9 @@ window.updateUserUI = function(user) {
         }
         if (logoutBtn) {
             logoutBtn.style.display = 'block';
+        }
+        if (signinBtn) {
+            signinBtn.style.display = 'none';
         }
     } else if (user === 'guest') {
         // Guest mode
@@ -24,10 +28,19 @@ window.updateUserUI = function(user) {
         if (logoutBtn) {
             logoutBtn.style.display = 'none';
         }
+        if (signinBtn) {
+            signinBtn.style.display = 'block';
+        }
         window.isGuestMode = true;
     } else {
         authSection?.classList.remove('hidden');
         gameSetupSection?.classList.add('hidden');
+        if (logoutBtn) {
+            logoutBtn.style.display = 'none';
+        }
+        if (signinBtn) {
+            signinBtn.style.display = 'none';
+        }
         window.isGuestMode = false;
     }
 }
@@ -196,5 +209,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const playAsGuestBtn = document.getElementById('play-as-guest-btn');
     playAsGuestBtn?.addEventListener('click', () => {
         window.updateUserUI('guest');
+    });
+    
+    // Handle sign in button (for guests)
+    const signinBtn = document.getElementById('signin-btn');
+    signinBtn?.addEventListener('click', () => {
+        window.isGuestMode = false;
+        const authSection = document.getElementById('auth-section');
+        const gameSetupSection = document.getElementById('game-setup-section');
+        authSection?.classList.remove('hidden');
+        gameSetupSection?.classList.add('hidden');
     });
 });
