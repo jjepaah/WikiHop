@@ -9,6 +9,44 @@ let timerTimeout = null;
 ui.startPageEl.textContent = state.gameState.startPage;
 ui.targetPageEl.textContent = state.gameState.targetPage;
 ui.clickCounterEl.textContent = state.gameState.clicks;
+
+//----------------------------------------------
+// Rogue Mode Stage Handling
+//----------------------------------------------
+
+async function handleRogueStageComplete(winResult) {
+    const currentMode = modeRegistry.getCurrentMode();
+    
+    // Import rogue state
+    const { rogueState } = await import("./rogue/rogueState.js");
+    const { calculateStageScore, getClickReward } = await import("./rogue/scoring.js");
+    
+    // Calculate score and rewards
+    const stageScore = calculateStageScore(
+        rogueState.unusedClicksThisStage,
+        rogueState.activeModifiers.length
+    );
+    const clickReward = await getClickReward(rogueState.activeModifiers.length, rogueState);
+    
+    // Update rogue state
+    rogueState.totalScore += stageScore;
+    rogueState.clickBalance += clickReward;
+    
+    // Show stage complete modal
+    const modal = document.getElementById("stage-complete-modal");
+    document.getElementById("stage-complete-number").textContent = rogueState.currentStage;
+    document.getElementById("stage-clicks-used").textContent = winResult.clicksUsed;
+    document.getElementById("stage-clicks-remaining").textContent = rogueState.unusedClicksThisStage;
+    document.getElementById("stage-clicks-earned").textContent = clickReward;
+    document.getElementById("stage-score-earned").textContent = stageScore;
+    
+    modal.classList.remove("hidden");
+    disableAllLinks();
+    
+    // Update UI
+    currentMode.updateRogueUI();
+}
+
 //----------------------------------------------
 // Game functions
 //----------------------------------------------
@@ -49,6 +87,16 @@ async function checkWin() {
             timerTimeout = null;
         }
 
+        // Call gamemode's checkWin to get result
+        const currentMode = modeRegistry.getCurrentMode();
+        const winResult = currentMode.checkWin(state.gameState);
+        
+        // Handle rogue mode stage completion differently
+        if (winResult && winResult.isRogueStageComplete) {
+            handleRogueStageComplete(winResult);
+            return;
+        }
+
         if (ui.winTitleEl) ui.winTitleEl.textContent = "You reached the target!";
         ui.finalClicksEl.textContent = state.gameState.clicks;
         ui.winModal.classList.remove("hidden");
@@ -63,11 +111,10 @@ async function checkWin() {
 
         // Call gamemode's onWin handler
         try {
-            const currentMode = modeRegistry.getCurrentMode();
-            const winResult = await currentMode.onWin(state.gameState);
+            const onWinResult = await currentMode.onWin(state.gameState);
 
             // Handle gamemode-specific win logic
-            if (winResult.shouldSaveLeaderboard) {
+            if (onWinResult.shouldSaveLeaderboard) {
                 let player = window.getCurrentUsername();
                 
                 // If guest mode, prompt for username
@@ -149,9 +196,10 @@ ui.gamemodeSelect.addEventListener("change", () => {
     const timeLimitSection = document.getElementById("time-limit-section");
     const isRandomMode = ui.gamemodeSelect.value === "random";
     const isTimedMode = ui.gamemodeSelect.value === "timed";
+    const isRogueMode = ui.gamemodeSelect.value === "rogue";
     
     pageInputSections.forEach(section => {
-        section.style.display = isRandomMode ? "none" : "flex";
+        section.style.display = (isRandomMode || isRogueMode) ? "none" : "flex";
     });
     
     // Show time limit section only for timed mode
@@ -159,6 +207,9 @@ ui.gamemodeSelect.addEventListener("change", () => {
         timeLimitSection.classList.toggle("hidden", !isTimedMode);
     }
 });
+
+// Trigger change event on page load to set initial state
+ui.gamemodeSelect.dispatchEvent(new Event("change"));
 
 // Handle custom time limit input visibility
 const timeLimitPreset = document.getElementById("time-limit-preset");
@@ -186,7 +237,15 @@ ui.startForm.addEventListener("submit", async e => {
     let target = ui.targetPageInput.value.trim();
 
     // Handle page generation based on gamemode
-    if (modeId === "random") {
+    if (modeId === "rogue") {
+        // Rogue mode handles its own page generation
+        // Initialize directly without passing start/target
+        await currentMode.initialize(state.gameState);
+        
+        ui.startModal.style.display = "none";
+        loadPage(state.gameState.startPage, false);
+        return; // Exit early for rogue mode
+    } else if (modeId === "random") {
         // Random mode: always generate both pages
         start = await getRandomPageTitle();
         target = await getRandomPageTitle();
@@ -358,6 +417,36 @@ ui.newRoundBtn.addEventListener("click", () => {
     }
 })
 
+// Rogue mode: Stage complete continue button
+const continueStageBtn = document.getElementById("continue-stage-btn");
+if (continueStageBtn) {
+    continueStageBtn.addEventListener("click", async () => {
+        const modal = document.getElementById("stage-complete-modal");
+        modal.classList.add("hidden");
+        
+        // Progress to next stage
+        const currentMode = modeRegistry.getCurrentMode();
+        if (currentMode.id === "rogue") {
+            const { rogueState, clearModifiers, clearVisitedPages } = await import("./rogue/rogueState.js");
+            const { calculateWikiPoints } = await import("./rogue/scoring.js");
+            
+            // Award WikiPoints
+            const wikiPoints = calculateWikiPoints(rogueState.activeModifiers.length);
+            rogueState.wikiPoints += wikiPoints;
+            
+            // Clear stage-specific state
+            clearModifiers();
+            clearVisitedPages();
+            
+            // Increment stage
+            rogueState.currentStage++;
+            
+            // Show modifier selection modal
+            await showModifierSelectionModal();
+        }
+    });
+}
+
 ui.homeBtn.addEventListener("click", () => {
     state.gameState.clicks = 0;
     state.gameState.history = [];
@@ -379,6 +468,278 @@ ui.homeBtn.addEventListener("click", () => {
         console.warn("Could not restore start-box children:", e);
     }
 });
+
+//----------------------------------------------
+// Rogue Mode: Modifier Selection
+//----------------------------------------------
+
+async function showModifierSelectionModal() {
+    const { rogueState, addModifier } = await import("./rogue/rogueState.js");
+    const { getRandomModifiers } = await import("./rogue/modifiers.js");
+    const { getDifficultyMultiplier, getClickReward } = await import("./rogue/scoring.js");
+    
+    const modal = document.getElementById("modifier-selection-modal");
+    const optionsContainer = document.getElementById("modifier-options");
+    const clicksDisplay = document.getElementById("modifier-clicks-display");
+    const confirmBtn = document.getElementById("confirm-modifiers-btn");
+    
+    // Update clicks display
+    clicksDisplay.textContent = rogueState.clickBalance;
+    
+    // Clear previous options
+    optionsContainer.innerHTML = "";
+    
+    // Generate modifier options (0-3 modifiers)
+    let selectedDifficulty = null;
+    
+    for (let count = 0; count <= 3; count++) {
+        const choiceDiv = document.createElement("div");
+        choiceDiv.className = "modifier-choice";
+        choiceDiv.dataset.difficulty = count;
+        
+        const header = document.createElement("div");
+        header.className = "modifier-choice-header";
+        
+        const title = document.createElement("div");
+        title.className = "modifier-choice-title";
+        const difficultyNames = ["No Challenge", "Easy", "Medium", "Hard"];
+        title.textContent = `${difficultyNames[count]} (${count} modifier${count !== 1 ? 's' : ''})`;
+        
+        const reward = document.createElement("div");
+        reward.className = "modifier-reward";
+        const clickReward = await getClickReward(count, rogueState);
+        const multiplier = getDifficultyMultiplier(count);
+        reward.textContent = `+${clickReward} clicks, ×${multiplier} score`;
+        
+        header.appendChild(title);
+        header.appendChild(reward);
+        choiceDiv.appendChild(header);
+        
+        // Show random modifiers for this difficulty
+        if (count > 0) {
+            const randomMods = getRandomModifiers(count);
+            const modList = document.createElement("ul");
+            modList.className = "modifier-list";
+            
+            randomMods.forEach(mod => {
+                const li = document.createElement("li");
+                li.textContent = `• ${mod.name}: ${mod.description}`;
+                li.dataset.modId = mod.id;
+                modList.appendChild(li);
+            });
+            
+            choiceDiv.appendChild(modList);
+            choiceDiv.dataset.modifiers = JSON.stringify(randomMods.map(m => m.id));
+        } else {
+            choiceDiv.dataset.modifiers = JSON.stringify([]);
+        }
+        
+        // Click handler
+        choiceDiv.addEventListener("click", () => {
+            // Remove previous selection
+            document.querySelectorAll(".modifier-choice").forEach(choice => {
+                choice.classList.remove("selected");
+            });
+            
+            // Select this choice
+            choiceDiv.classList.add("selected");
+            selectedDifficulty = count;
+        });
+        
+        optionsContainer.appendChild(choiceDiv);
+    }
+    
+    // Auto-select no challenge option
+    optionsContainer.firstChild.classList.add("selected");
+    selectedDifficulty = 0;
+    
+    // Show modal
+    modal.classList.remove("hidden");
+    
+    // Wait for confirmation
+    return new Promise((resolve) => {
+        const handler = async () => {
+            if (selectedDifficulty === null) return;
+            
+            // Get selected choice
+            const selectedChoice = document.querySelector(".modifier-choice.selected");
+            const modifierIds = JSON.parse(selectedChoice.dataset.modifiers);
+            
+            // Import and add modifiers
+            const { getModifier } = await import("./rogue/modifiers.js");
+            modifierIds.forEach(modId => {
+                const modifier = getModifier(modId);
+                addModifier(modifier);
+            });
+            
+            // Hide modal
+            modal.classList.add("hidden");
+            
+            // Remove event listener
+            confirmBtn.removeEventListener("click", handler);
+            
+            // Show shop before starting stage
+            await showShopModal();
+            
+            // Start new stage
+            await startNewRogueStage();
+            
+            resolve();
+        };
+        
+        confirmBtn.addEventListener("click", handler);
+    });
+}
+
+async function showShopModal() {
+    const { rogueState, addItem, removeItem, hasItem } = await import("./rogue/rogueState.js");
+    const { generateShopInventory, applyItemEffect } = await import("./rogue/shop.js");
+    
+    const modal = document.getElementById("shop-modal");
+    const itemsContainer = document.getElementById("shop-items");
+    const clicksDisplay = document.getElementById("shop-clicks-display");
+    const closeBtn = document.getElementById("close-shop-btn");
+    const rerollBtn = document.getElementById("reroll-shop-btn");
+    
+    let currentInventory = [];
+    let rerollCost = 4;
+    const ownedIds = new Set([
+        ...rogueState.permanentUpgrades.map(i => i.id),
+        ...rogueState.ownedItems.map(i => i.id)
+    ]);
+    
+    function renderShop() {
+        clicksDisplay.textContent = rogueState.clickBalance;
+        itemsContainer.innerHTML = "";
+        
+        currentInventory.forEach(item => {
+            const itemDiv = document.createElement("div");
+            itemDiv.className = "shop-item";
+            
+            const alreadyOwned = ownedIds.has(item.id);
+            if (alreadyOwned) {
+                itemDiv.classList.add("purchased");
+            }
+            
+            const header = document.createElement("div");
+            header.className = "shop-item-header";
+            
+            const name = document.createElement("div");
+            name.className = "shop-item-name";
+            name.textContent = item.name;
+            
+            const cost = document.createElement("div");
+            cost.className = "shop-item-cost";
+            cost.textContent = `${item.cost} clicks`;
+            
+            header.appendChild(name);
+            header.appendChild(cost);
+            
+            const description = document.createElement("div");
+            description.className = "shop-item-description";
+            description.textContent = item.description;
+            
+            const type = document.createElement("div");
+            type.className = "shop-item-type";
+            type.textContent = item.permanent ? "Permanent Upgrade" : "Consumable";
+            
+            const buyBtn = document.createElement("button");
+            buyBtn.className = "shop-item-buy-btn";
+            
+            if (alreadyOwned) {
+                buyBtn.textContent = "Owned";
+                buyBtn.disabled = true;
+            } else if (rogueState.clickBalance < item.cost) {
+                buyBtn.textContent = "Not Enough Clicks";
+                buyBtn.disabled = true;
+            } else {
+                buyBtn.textContent = "Buy";
+                buyBtn.addEventListener("click", async () => {
+                    // Purchase item
+                    rogueState.clickBalance -= item.cost;
+                    addItem(item);
+                    ownedIds.add(item.id);
+                    
+                    // Apply immediate effects
+                    const result = await applyItemEffect(item, rogueState, state.gameState);
+                    if (result.message) {
+                        console.log(result.message);
+                    }
+                    
+                    // Re-render shop
+                    renderShop();
+                    
+                    // Update rogue UI
+                    const currentMode = modeRegistry.getCurrentMode();
+                    if (currentMode) currentMode.updateRogueUI();
+                });
+            }
+            
+            itemDiv.appendChild(header);
+            itemDiv.appendChild(description);
+            itemDiv.appendChild(type);
+            itemDiv.appendChild(buyBtn);
+            
+            itemsContainer.appendChild(itemDiv);
+        });
+        
+        // Update reroll button
+        rerollBtn.textContent = `Reroll (${rerollCost} clicks)`;
+        rerollBtn.disabled = rogueState.clickBalance < rerollCost;
+    }
+    
+    // Generate initial inventory
+    currentInventory = generateShopInventory(4);
+    renderShop();
+    
+    // Reroll handler
+    const rerollHandler = () => {
+        if (rogueState.clickBalance >= rerollCost) {
+            rogueState.clickBalance -= rerollCost;
+            currentInventory = generateShopInventory(4);
+            renderShop();
+        }
+    };
+    rerollBtn.addEventListener("click", rerollHandler);
+    
+    // Show modal
+    modal.classList.remove("hidden");
+    
+    // Wait for close
+    return new Promise((resolve) => {
+        const closeHandler = () => {
+            modal.classList.add("hidden");
+            closeBtn.removeEventListener("click", closeHandler);
+            rerollBtn.removeEventListener("click", rerollHandler);
+            resolve();
+        };
+        closeBtn.addEventListener("click", closeHandler);
+    });
+}
+
+async function startNewRogueStage() {
+    const { rogueState } = await import("./rogue/rogueState.js");
+    const { getTargetForStage, getRandomStartPage } = await import("./rogue/targetPools.js");
+    const currentMode = modeRegistry.getCurrentMode();
+    
+    // Set new start and target
+    state.gameState.startPage = getRandomStartPage();
+    state.gameState.targetPage = getTargetForStage(rogueState.currentStage);
+    state.gameState.clicks = rogueState.clickBalance;
+    state.gameState.history = [];
+    state.gameState.startTime = Date.now();
+    
+    // Track starting clicks for new stage
+    rogueState.clicksAtStageStart = rogueState.clickBalance;
+    
+    // Update UI
+    currentMode.updateRogueUI();
+    
+    // Load the new start page
+    await loadPage(state.gameState.startPage, false);
+    
+    console.log(`Starting Stage ${rogueState.currentStage}: ${state.gameState.startPage} → ${state.gameState.targetPage}`);
+}
 
 // Start
 ui.startModal.style.display = "flex";
