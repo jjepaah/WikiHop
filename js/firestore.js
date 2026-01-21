@@ -36,3 +36,26 @@ window.getRandomLeaderboard = async function() {
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => doc.data());
 }
+
+window.saveTimedScore = async function({
+    player,
+    clicks,
+    startPage,
+    targetPage,
+    timeLeft
+}) {
+    await addDoc(collection(db, "leaderboard_timed"), {
+        player,
+        clicks,
+        startPage,
+        targetPage,
+        timeLeft,
+        date: new Date()
+    });
+}
+
+window.getTimedLeaderboard = async function() {
+    const q = query(collection(db, "leaderboard_timed"), orderBy("timeLeft", "desc"), limit(10));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => doc.data());
+}

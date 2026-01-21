@@ -25,13 +25,19 @@ export class TimedMode extends BaseModeHandler {
         this.timerDuration = 300; // 5 minutes in seconds (default)
         this.timerInterval = null;
         this.onTimerEnd = null;
+        this.isStandardTime = false;
+        this.arePagesRandom = false;
     }
 
     async initialize(gameState, params = {}) {
-        const { startPage, targetPage, timeLimitMinutes } = params;
+        const { startPage, targetPage, timeLimitMinutes, timeLimitPreset, arePagesRandom } = params;
 
         // Set time duration based on parameter or use default 5 minutes
         this.timerDuration = (timeLimitMinutes || 5) * 60; // Convert minutes to seconds
+        
+        // Track if this is a standard time and random pages for leaderboard eligibility
+        this.isStandardTime = (timeLimitPreset === "standard");
+        this.arePagesRandom = arePagesRandom || false;
 
         gameState.mode = "timed";
         gameState.gamemode = "individual";
@@ -68,11 +74,16 @@ export class TimedMode extends BaseModeHandler {
     async onWin(gameState) {
         gameState.endTime = Date.now();
         const runTimeMs = gameState.endTime - gameState.startTime;
+        const timeLeftSeconds = Math.max(this.timerDuration - (runTimeMs / 1000), 0);
 
         return {
             clicks: gameState.clicks,
             timeMs: runTimeMs,
-            timedOut: false
+            timedOut: false,
+            shouldSaveLeaderboard: true, // this.isStandardTime && this.arePagesRandom,
+            startPage: gameState.startPage,
+            targetPage: gameState.targetPage,
+            timeLeft: timeLeftSeconds
         };
     }
 

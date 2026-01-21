@@ -69,16 +69,29 @@ async function checkWin() {
             // Handle gamemode-specific win logic
             if (winResult.shouldSaveLeaderboard) {
                 const player = prompt("Enter your name for the leaderboard:") || "Anonymous";
-                await saveRandomScore({
-                    player,
-                    clicks: winResult.clicks,
-                    startPage: winResult.startPage,
-                    targetPage: winResult.targetPage,
-                    timeMs: winResult.timeMs
-                });
-
-                const leaderboard = await getRandomLeaderboard();
-                console.log("Top 10 scores:", leaderboard);
+                
+                // Check if it's random or timed mode
+                if (state.gameState.mode === "random") {
+                    await saveRandomScore({
+                        player,
+                        clicks: winResult.clicks,
+                        startPage: winResult.startPage,
+                        targetPage: winResult.targetPage,
+                        timeMs: winResult.timeMs
+                    });
+                    const leaderboard = await getRandomLeaderboard();
+                    console.log("Top 10 random scores:", leaderboard);
+                } else if (state.gameState.mode === "timed") {
+                    await saveTimedScore({
+                        player,
+                        clicks: winResult.clicks,
+                        startPage: winResult.startPage,
+                        targetPage: winResult.targetPage,
+                        timeLeft: winResult.timeLeft
+                    });
+                    const leaderboard = await getTimedLeaderboard();
+                    console.log("Top 10 timed scores:", leaderboard);
+                }
                 
                 // Reload the leaderboard display
                 if (window.reloadLeaderboard) {
@@ -200,14 +213,25 @@ ui.startForm.addEventListener("submit", async e => {
 
     // For timed mode, get the custom time limit if provided
     let timeLimitMinutes = 5; // default
+    let timeLimitPreset = "standard";
+    let arePagesRandom = false;
+    
     if (modeId === "timed") {
-        const timeLimitPreset = document.getElementById("time-limit-preset");
-        if (timeLimitPreset && timeLimitPreset.value === "custom") {
-            const customTimeInput = document.getElementById("custom-time-input");
-            if (customTimeInput && customTimeInput.value) {
-                timeLimitMinutes = parseInt(customTimeInput.value) || 5;
+        const timeLimitPresetEl = document.getElementById("time-limit-preset");
+        if (timeLimitPresetEl) {
+            timeLimitPreset = timeLimitPresetEl.value;
+            if (timeLimitPreset === "custom") {
+                const customTimeInput = document.getElementById("custom-time-input");
+                if (customTimeInput && customTimeInput.value) {
+                    timeLimitMinutes = parseInt(customTimeInput.value) || 5;
+                }
             }
         }
+        
+        // Check if both pages were randomly generated (not user-provided)
+        const startInput = ui.startPageInput.value.trim();
+        const targetInput = ui.targetPageInput.value.trim();
+        arePagesRandom = (!startInput && !targetInput);
     }
 
     // Initialize the gamemode with necessary params
@@ -216,7 +240,9 @@ ui.startForm.addEventListener("submit", async e => {
         targetPage: target,
         wikiLang: ui.langSelect.value,
         getRandomPageTitle,
-        timeLimitMinutes
+        timeLimitMinutes,
+        timeLimitPreset,
+        arePagesRandom
     });
 
     // For timed mode, set up timeout to end game after time limit
