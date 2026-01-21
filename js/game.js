@@ -68,7 +68,12 @@ async function checkWin() {
 
             // Handle gamemode-specific win logic
             if (winResult.shouldSaveLeaderboard) {
-                const player = prompt("Enter your name for the leaderboard:") || "Anonymous";
+                let player = window.getCurrentUsername();
+                
+                // If guest mode, prompt for username
+                if (window.isGuestMode || !player) {
+                    player = prompt("Enter your name for the leaderboard:") || "Anonymous";
+                }
                 
                 // Check if it's random or timed mode
                 if (state.gameState.mode === "random") {
