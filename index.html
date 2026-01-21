@@ -24,6 +24,43 @@
     <div id="start-modal">
         <div id="start-box">
             <h1 id="start-header">WikiHop</h1>
+            
+            <div id="auth-section">
+                <!-- Registration Form -->
+                <div id="register-form">
+                    <h3>Create Account</h3>
+                    <div class="auth-form">
+                        <input type="text" id="register-username" placeholder="Username (3-20 characters)" maxlength="20" />
+                        <input type="password" id="register-password" placeholder="Password (min 6 characters)" />
+                        <input type="password" id="register-confirm-password" placeholder="Confirm Password" />
+                        <button id="register-submit-btn" type="button">Create Account</button>
+                        <p id="register-error" class="error-message hidden"></p>
+                    </div>
+                    <p class="auth-toggle">Already have an account? <a href="#" id="show-login-btn">Login</a></p>
+                </div>
+                
+                <!-- Login Form -->
+                <div id="login-form" class="hidden">
+                    <h3>Login</h3>
+                    <div class="auth-form">
+                        <input type="text" id="login-username" placeholder="Username" />
+                        <input type="password" id="login-password" placeholder="Password" />
+                        <button id="login-submit-btn" type="button">Login</button>
+                        <p id="login-error" class="error-message hidden"></p>
+                    </div>
+                    <p class="auth-toggle">Don't have an account? <a href="#" id="show-register-btn">Create one</a></p>
+                </div>
+                
+                <div class="guest-section">
+                    <button id="play-as-guest-btn" type="button" class="guest-btn">Play as Guest</button>
+                </div>
+            </div>
+            
+            <div id="game-setup-section" class="hidden">
+                <div class="user-info">
+                    <p>Playing as: <strong id="current-username">Guest</strong></p>
+                    <button id="logout-btn" type="button" class="small-btn">Logout</button>
+                </div>
             <p>Choose your start and target pages</p>
 
             <form id="start-form">
@@ -97,6 +134,7 @@
                     </div>
                 </div>
             </div>
+            </div>
             
         </div>
         <div id="leaderboard-box">
@@ -124,6 +162,7 @@
     <script type="module" src="js/firestore.js"></script>
 
     <!-- Javascript -->
+    <script type="module" src="js/auth.js"></script>
     <script type="module" src="js/core/leaderboard.js"></script>
     <script type="module" src="js/multiplayer.js"></script>
     <script src="js/api.js"></script>
