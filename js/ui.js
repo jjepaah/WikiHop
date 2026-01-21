@@ -61,6 +61,9 @@ function renderPage(page) {
             return;
         }
 
+        // Skip external links and anchor links (like those in help documentation)
+        if (link.classList.contains('external-link') || link.classList.contains('anchor-link')) return;
+
         // Only allow internal wiki navigation
         if (!href.startsWith("/wiki/")) return;
 
@@ -113,3 +116,83 @@ export async function renderPageWithTransition(page) {
         ui.titleEl.style.opacity = 1;
     });
 }
+
+// Load and render markdown help file
+export async function loadHelpPage() {
+    try {
+        const response = await fetch('docs/Rules.md');
+        const markdown = await response.text();
+        
+        ui.titleEl.textContent = 'Help & Rules';
+        
+        // Helper to create ID from header text
+        const createId = (text) => text.toLowerCase().replace(/[^\w]+/g, '-');
+        
+        // Convert markdown to HTML (basic conversion)
+        let html = markdown
+            // Headers with IDs
+            .replace(/^### (.*)$/gim, (match, text) => `<h3 id="${createId(text)}">${text}</h3>`)
+            .replace(/^## (.*)$/gim, (match, text) => `<h2 id="${createId(text)}">${text}</h2>`)
+            .replace(/^# (.*)$/gim, (match, text) => `<h1 id="${createId(text)}">${text}</h1>`)
+            // Bold
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            // Italic
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            // Code blocks
+            .replace(/```(.*?)```/gs, '<pre><code>$1</code></pre>')
+            // Inline code
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            // Links - differentiate between anchor links and external links
+            .replace(/\[(.*?)\]\((#.*?)\)/g, '<a href="$2" class="anchor-link">$1</a>')
+            .replace(/\[(.*?)\]\((https?:\/\/.*?)\)/g, '<a href="$2" class="external-link" target="_blank" rel="noopener noreferrer">$1</a>')
+            .replace(/\[(.*?)\]\(((?!#|https?:\/\/).*?)\)/g, '<span class="disabled-link">$1</span>')
+            // Line breaks
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>');
+        
+        html = '<div class="help-content"><p>' + html + '</p></div>';
+        
+        ui.contentEl.innerHTML = html;
+        ui.contentEl.style.opacity = 1;
+        ui.titleEl.style.opacity = 1;
+        
+        // Add click handler for anchor links to scroll to sections
+        const anchorLinks = ui.contentEl.querySelectorAll('.anchor-link');
+        anchorLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const targetId = link.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+        
+        // Add click handler for external links to ensure they open in new tab
+        const externalLinks = ui.contentEl.querySelectorAll('.external-link');
+        externalLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent game's link handler
+            });
+        });
+        
+        // Hide start modal
+        ui.startModal.style.display = 'none';
+    } catch (error) {
+        console.error('Error loading help:', error);
+        ui.contentEl.innerHTML = '<p>Failed to load help documentation.</p>';
+    }
+}
+
+// Add help link handler
+document.addEventListener('DOMContentLoaded', () => {
+    const helpLink = document.getElementById('help-link');
+    if (helpLink) {
+        helpLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            loadHelpPage();
+        });
+    }
+});

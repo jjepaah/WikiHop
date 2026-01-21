@@ -441,6 +441,40 @@ p, li, table {
     margin: 0;
 }
 
+.help-link-container {
+    text-align: center;
+    margin: 1rem 0;
+}
+
+.help-link-container a {
+    color: #90caf9;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.help-link-container a:hover {
+    color: #64b5f6;
+    text-decoration: underline;
+}
+
+.disabled-link {
+    color: #b0b0b0;
+    cursor: default;
+    text-decoration: none;
+}
+
+.anchor-link {
+    color: #90caf9;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.anchor-link:hover {
+    color: #64b5f6;
+    text-decoration: underline;
+}
+
 .small-btn {
     padding: 0.4rem 0.8rem !important;
     font-size: 0.85rem !important;

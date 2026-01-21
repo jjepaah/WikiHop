@@ -10,7 +10,6 @@ Welcome to **WikiHop**! This document explains the rules for each game mode, sco
 - [Local Game Modes](#local-game-modes)
 - [Multiplayer](#multiplayer)
 - [Game Mechanics](#game-mechanics)
-- [Tips & Tricks](#tips--tricks)
 
 ---
 

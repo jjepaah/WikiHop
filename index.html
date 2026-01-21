@@ -27,7 +27,7 @@
             
             <div id="auth-section">
                 <!-- Registration Form -->
-                <div id="register-form">
+                <div id="register-form" class="hidden">
                     <h3>Create Account</h3>
                     <div class="auth-form">
                         <input type="text" id="register-username" placeholder="Username (3-20 characters)" maxlength="20" />
@@ -40,7 +40,7 @@
                 </div>
                 
                 <!-- Login Form -->
-                <div id="login-form" class="hidden">
+                <div id="login-form">
                     <h3>Login</h3>
                     <div class="auth-form">
                         <input type="text" id="login-username" placeholder="Username" />
@@ -62,7 +62,7 @@
                     <button id="logout-btn" type="button" class="small-btn">Logout</button>
                     <button id="signin-btn" type="button" class="small-btn signin-btn" style="display: none;">Sign in</button>
                 </div>
-            <p>Choose your start and target pages</p>
+            <p class="help-link-container"><a href="#" id="help-link">Help</a></p>
 
             <form id="start-form">
                 <div class="dropdowns-container">
