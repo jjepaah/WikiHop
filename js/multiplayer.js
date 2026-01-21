@@ -48,6 +48,11 @@ function generatePartyCode() {
 
 async function createParty(playerName, wikiLang) {
     const code = generatePartyCode();
+    
+    // Ensure user is authenticated (even if guest)
+    if (!auth.currentUser) {
+        await signInAnonymously(auth);
+    }
     const uid = auth.currentUser.uid;
     
     const partyRef = doc(db, "parties", code);
@@ -75,6 +80,10 @@ async function createParty(playerName, wikiLang) {
 }
 
 async function joinParty(code, playerName) {
+    // Ensure user is authenticated (even if guest)
+    if (!auth.currentUser) {
+        await signInAnonymously(auth);
+    }
     const uid = auth.currentUser.uid;
     const partyRef = doc(db, "parties", code);
 
@@ -472,7 +481,13 @@ async function leaveParty() {
 //----------------------------------------------
 
 ui.createPartyBtn.addEventListener("click", async () => {
-    const playerName = prompt("Enter your name:") || "Anonymous";
+    let playerName = window.getCurrentUsername();
+    
+    // If guest mode or no username, prompt
+    if (window.isGuestMode || !playerName) {
+        playerName = prompt("Enter your name:") || "Anonymous";
+    }
+    
     const wikiLang = typeof getWikiLang === "function" ? getWikiLang() : (document.getElementById("wiki-lang") || {}).value || "en";
     
     const code = await createParty(playerName, wikiLang);
@@ -484,7 +499,13 @@ ui.joinPartyBtn.addEventListener("click", async () => {
     const code = raw ? raw.trim().toUpperCase() : "";
     if (!code) return;
 
-    const playerName = prompt("Enter your name:") || "Anonymous";
+    let playerName = window.getCurrentUsername();
+    
+    // If guest mode or no username, prompt
+    if (window.isGuestMode || !playerName) {
+        playerName = prompt("Enter your name:") || "Anonymous";
+    }
+    
     try {
         await joinParty(code, playerName);
     } catch (err) {
