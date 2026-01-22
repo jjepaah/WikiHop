@@ -93,10 +93,15 @@ async function checkWin() {
 
         // Call gamemode's checkWin to get result
         const currentMode = modeRegistry.getCurrentMode();
-        const winResult = currentMode.checkWin(state.gameState);
+        const winResult = await currentMode.checkWin(state.gameState);
+        
+        // If mode returns null, the win is not valid yet (e.g., Scenic Route requirement not met)
+        if (!winResult) {
+            return;
+        }
         
         // Handle rogue mode stage completion differently
-        if (winResult && winResult.isRogueStageComplete) {
+        if (winResult.isRogueStageComplete) {
             handleRogueStageComplete(winResult);
             return;
         }

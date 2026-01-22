@@ -159,6 +159,15 @@ function clearModifierEffects() {
         link.style.pointerEvents = "";
         link.title = "";
     });
+    
+    // Remove don't look back effects
+    document.querySelectorAll(".visited-disabled").forEach(link => {
+        link.classList.remove("visited-disabled");
+        link.style.pointerEvents = "";
+        link.style.opacity = "";
+        link.style.textDecoration = "";
+        link.title = "";
+    });
 }
 
 // Fog of War: Disable N random links
@@ -186,10 +195,11 @@ function applyDontLookBack(visitedPages) {
         const linkTitle = link.getAttribute("data-wiki-title") || link.title || link.textContent;
         
         if (visitedPages.includes(linkTitle)) {
+            link.classList.add("visited-disabled");
             link.style.pointerEvents = "none";
             link.style.opacity = "0.3";
             link.style.textDecoration = "line-through";
-            link.title = "Already visited";
+            link.title = "Already visited - Don't Look Back";
         }
     });
 }
@@ -216,4 +226,15 @@ export function hasTimePressure(modifiers) {
 export function getTimeLimit(modifiers) {
     const timeMod = modifiers.find(mod => mod.id.startsWith("timePressure"));
     return timeMod ? timeMod.params.timeLimit : null;
+}
+
+// Check if modifiers include scenic route
+export function hasScenicRoute(modifiers) {
+    return modifiers.some(mod => mod.id.startsWith("scenicRoute"));
+}
+
+// Get minimum clicks required from modifiers
+export function getMinClicks(modifiers) {
+    const scenicMod = modifiers.find(mod => mod.id.startsWith("scenicRoute"));
+    return scenicMod ? scenicMod.params.minClicks : 0;
 }

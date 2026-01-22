@@ -67,7 +67,7 @@ function renderPage(page) {
         // Only allow internal wiki navigation
         if (!href.startsWith("/wiki/")) return;
 
-        link.addEventListener("click", e => {
+        link.addEventListener("click", async e => {
             e.preventDefault();
             const raw = href.replace("/wiki/", "").replace(/_/g, " ");
             let title;
@@ -76,6 +76,30 @@ function renderPage(page) {
             } catch {
                 title = raw;
             }
+            
+            // Check if this is the target page and validate modifiers before navigating
+            const { gameState } = await import("./core/gameState.js");
+            if (gameState.gamemode === "rogue" && title === gameState.targetPage) {
+                const { rogueState } = await import("./rogue/rogueState.js");
+                const { hasScenicRoute, getMinClicks } = await import("./rogue/modifiers.js");
+                
+                console.log("Target clicked! Active modifiers:", rogueState.activeModifiers);
+                console.log("Has scenic route:", hasScenicRoute(rogueState.activeModifiers));
+                
+                if (hasScenicRoute(rogueState.activeModifiers)) {
+                    const minClicks = getMinClicks(rogueState.activeModifiers);
+                    // Add 1 to account for the click that's about to happen
+                    const clicksUsed = rogueState.clicksAtStageStart - rogueState.clickBalance + 1;
+                    
+                    console.log(`Scenic Route check: ${clicksUsed} clicks used, need ${minClicks}`);
+                    
+                    if (clicksUsed < minClicks) {
+                        alert(`Scenic Route requires at least ${minClicks} clicks. You will have used ${clicksUsed}. Keep exploring!`);
+                        return; // Don't navigate
+                    }
+                }
+            }
+            
             loadPage(title, true);
         });
     });

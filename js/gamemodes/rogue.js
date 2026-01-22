@@ -102,7 +102,7 @@ export class RogueMode extends BaseModeHandler {
         this.updateRogueUI();
     }
 
-    checkWin(gameState) {
+    async checkWin(gameState) {
         if (gameState.currentPage === gameState.targetPage) {
             // Stop timer if active
             this.stopTimer();
