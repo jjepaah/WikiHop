@@ -203,6 +203,7 @@ function disableAllLinks() {
 ui.gamemodeSelect.addEventListener("change", () => {
     const pageInputSections = document.querySelectorAll(".page-input-section");
     const timeLimitSection = document.getElementById("time-limit-section");
+    const randomTimedSection = document.getElementById("random-timed-section");
     const isRandomMode = ui.gamemodeSelect.value === "random";
     const isTimedMode = ui.gamemodeSelect.value === "timed";
     const isRogueMode = ui.gamemodeSelect.value === "rogue";
@@ -210,6 +211,11 @@ ui.gamemodeSelect.addEventListener("change", () => {
     pageInputSections.forEach(section => {
         section.style.display = (isRandomMode || isRogueMode) ? "none" : "flex";
     });
+    
+    // Show random-timed checkbox only for random mode
+    if (randomTimedSection) {
+        randomTimedSection.style.display = isRandomMode ? "flex" : "none";
+    }
     
     // Show time limit section only for timed mode
     if (timeLimitSection) {
@@ -235,7 +241,17 @@ if (timeLimitPreset) {
 ui.startForm.addEventListener("submit", async e => {
     e.preventDefault();
 
-    const modeId = ui.gamemodeSelect.value;
+    let modeId = ui.gamemodeSelect.value;
+    
+    // Check if Random mode with Timed checkbox is enabled
+    let isRandomWithTimed = false;
+    if (modeId === "random") {
+        const randomTimedCheckbox = document.getElementById("random-timed-checkbox");
+        if (randomTimedCheckbox && randomTimedCheckbox.checked) {
+            isRandomWithTimed = true;
+            modeId = "timed"; // Switch to timed mode
+        }
+    }
     
     // Set current gamemode in registry
     const currentMode = modeRegistry.setCurrentMode(modeId);
@@ -254,8 +270,8 @@ ui.startForm.addEventListener("submit", async e => {
         ui.startModal.style.display = "none";
         loadPage(state.gameState.startPage, false);
         return; // Exit early for rogue mode
-    } else if (modeId === "random") {
-        // Random mode: always generate both pages
+    } else if (modeId === "random" || isRandomWithTimed) {
+        // Random mode (or random with timed): always generate both pages
         start = await getRandomPageTitle();
         target = await getRandomPageTitle();
         while (target === start) {
@@ -290,21 +306,29 @@ ui.startForm.addEventListener("submit", async e => {
     let arePagesRandom = false;
     
     if (modeId === "timed") {
-        const timeLimitPresetEl = document.getElementById("time-limit-preset");
-        if (timeLimitPresetEl) {
-            timeLimitPreset = timeLimitPresetEl.value;
-            if (timeLimitPreset === "custom") {
-                const customTimeInput = document.getElementById("custom-time-input");
-                if (customTimeInput && customTimeInput.value) {
-                    timeLimitMinutes = parseInt(customTimeInput.value) || 5;
+        // If this is random mode with timed checkbox, use standard time and random pages
+        if (isRandomWithTimed) {
+            timeLimitMinutes = 5;
+            timeLimitPreset = "standard";
+            arePagesRandom = true;
+        } else {
+            // Regular timed mode - check time limit settings
+            const timeLimitPresetEl = document.getElementById("time-limit-preset");
+            if (timeLimitPresetEl) {
+                timeLimitPreset = timeLimitPresetEl.value;
+                if (timeLimitPreset === "custom") {
+                    const customTimeInput = document.getElementById("custom-time-input");
+                    if (customTimeInput && customTimeInput.value) {
+                        timeLimitMinutes = parseInt(customTimeInput.value) || 5;
+                    }
                 }
             }
+            
+            // Check if both pages were randomly generated (not user-provided)
+            const startInput = ui.startPageInput.value.trim();
+            const targetInput = ui.targetPageInput.value.trim();
+            arePagesRandom = (!startInput && !targetInput);
         }
-        
-        // Check if both pages were randomly generated (not user-provided)
-        const startInput = ui.startPageInput.value.trim();
-        const targetInput = ui.targetPageInput.value.trim();
-        arePagesRandom = (!startInput && !targetInput);
     }
 
     // Initialize the gamemode with necessary params
@@ -414,6 +438,22 @@ export function resetTargetInfo() {
 
 // Win screen button
 ui.newRoundBtn.addEventListener("click", () => {
+    // Clear any pending timed game timeout
+    if (timerTimeout) {
+        clearTimeout(timerTimeout);
+        timerTimeout = null;
+    }
+
+    // Clean up current gamemode
+    try {
+        const currentMode = modeRegistry.getCurrentMode();
+        if (currentMode && currentMode.cleanup) {
+            currentMode.cleanup(state.gameState);
+        }
+    } catch (e) {
+        // No active gamemode, that's fine
+    }
+
     ui.winModal.classList.add("hidden");
 
     state.gameState.clicks = 0;
@@ -468,6 +508,22 @@ if (continueStageBtn) {
 }
 
 ui.homeBtn.addEventListener("click", () => {
+    // Clear any pending timed game timeout
+    if (timerTimeout) {
+        clearTimeout(timerTimeout);
+        timerTimeout = null;
+    }
+
+    // Clean up current gamemode
+    try {
+        const currentMode = modeRegistry.getCurrentMode();
+        if (currentMode && currentMode.cleanup) {
+            currentMode.cleanup(state.gameState);
+        }
+    } catch (e) {
+        // No active gamemode, that's fine
+    }
+
     state.gameState.clicks = 0;
     state.gameState.history = [];
     ui.clickCounterEl.textContent = 0;
