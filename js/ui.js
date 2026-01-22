@@ -111,9 +111,14 @@ export async function renderPageWithTransition(page) {
 
     renderPage(page);
 
-    requestAnimationFrame(() => {
-        ui.contentEl.style.opacity = 1;
-        ui.titleEl.style.opacity = 1;
+    // Wait for both requestAnimationFrame and allow fade-in to start
+    await new Promise(resolve => {
+        requestAnimationFrame(() => {
+            ui.contentEl.style.opacity = 1;
+            ui.titleEl.style.opacity = 1;
+            // Wait one more frame to ensure rendering is complete
+            requestAnimationFrame(resolve);
+        });
     });
 }
 

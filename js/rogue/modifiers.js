@@ -5,11 +5,11 @@ export const MODIFIERS = {
     fogOfWarEasy: {
         id: "fogOfWarEasy",
         name: "Fog of War (Easy)",
-        description: "Only see 10 links at a time",
+        description: "10 random links are disabled",
         difficulty: "easy",
         clickReward: 2,
         scoreMultiplier: 1.5,
-        params: { visibleLinks: 10 }
+        params: { disabledLinks: 10 }
     },
     scenicRouteEasy: {
         id: "scenicRouteEasy",
@@ -34,11 +34,11 @@ export const MODIFIERS = {
     fogOfWarMedium: {
         id: "fogOfWarMedium",
         name: "Fog of War (Medium)",
-        description: "Only see 6 links at a time",
+        description: "20 random links are disabled",
         difficulty: "medium",
         clickReward: 4,
         scoreMultiplier: 2.0,
-        params: { visibleLinks: 6 }
+        params: { disabledLinks: 20 }
     },
     dontLookBack: {
         id: "dontLookBack",
@@ -81,11 +81,11 @@ export const MODIFIERS = {
     fogOfWarHard: {
         id: "fogOfWarHard",
         name: "Fog of War (Hard)",
-        description: "Only see 3 links at a time",
+        description: "30 random links are disabled",
         difficulty: "hard",
         clickReward: 6,
         scoreMultiplier: 3.0,
-        params: { visibleLinks: 3 }
+        params: { disabledLinks: 30 }
     },
     buttonSmasherHard: {
         id: "buttonSmasherHard",
@@ -124,35 +124,57 @@ export function getRandomModifiers(count, exclude = []) {
 
 // Apply modifier effects to the page
 export function applyModifierEffects(modifiers, visitedPages = []) {
+    // First, clear any previous modifier effects from the old page
+    clearModifierEffects();
+    
+    // Then apply new modifiers
     modifiers.forEach(modifier => {
         switch (modifier.id) {
             case "fogOfWarEasy":
             case "fogOfWarMedium":
             case "fogOfWarHard":
-                applyFogOfWar(modifier.params.visibleLinks);
+                applyFogOfWar(modifier.params.disabledLinks);
                 break;
             case "dontLookBack":
                 applyDontLookBack(visitedPages);
                 break;
+            case "timePressureEasy":
+            case "timePressureMedium":
+            case "timePressureHard":
+                // Timer is handled in RogueMode.onPageLoad
+                break;
             // Button Smasher is handled in onPageLoad
-            // Time Pressure needs timer (Phase 2)
             // Scenic Route is validated at win (Phase 2)
         }
     });
 }
 
-// Fog of War: Show only N random links
-function applyFogOfWar(visibleCount) {
+// Clear all modifier effects (called before applying new modifiers)
+function clearModifierEffects() {
+    // Remove fog of war effects
+    document.querySelectorAll(".fog-disabled").forEach(link => {
+        link.classList.remove("fog-disabled");
+        link.style.color = "";
+        link.style.cursor = "";
+        link.style.pointerEvents = "";
+        link.title = "";
+    });
+}
+
+// Fog of War: Disable N random links
+function applyFogOfWar(disabledCount) {
     const links = Array.from(document.querySelectorAll("#content a"));
     
     // Shuffle links
     const shuffled = links.sort(() => Math.random() - 0.5);
     
-    // Hide all except first N
-    shuffled.forEach((link, index) => {
-        if (index >= visibleCount) {
-            link.style.display = "none";
-        }
+    // Disable first N links
+    shuffled.slice(0, disabledCount).forEach(link => {
+        link.classList.add("fog-disabled");
+        link.style.color = "#ba3030";
+        link.style.cursor = "not-allowed";
+        link.style.pointerEvents = "none";
+        link.title = "Link disabled by Fog of War";
     });
 }
 

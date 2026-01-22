@@ -20,6 +20,8 @@ export class RogueMode extends BaseModeHandler {
             },
             isMultiplayer: false
         });
+        this.timerInterval = null;
+        this.stageStartTime = null;
     }
 
     async initialize(gameState) {
@@ -85,8 +87,16 @@ export class RogueMode extends BaseModeHandler {
         addVisitedPage(currentPage);
         
         // Apply modifier effects to the page
+        // (renderPageWithTransition now waits for page to be fully rendered)
         const { applyModifierEffects } = await import("../rogue/modifiers.js");
         applyModifierEffects(rogueState.activeModifiers, rogueState.visitedPages);
+        
+        // Restart timer on every page load if Time Pressure is active
+        const { hasTimePressure, getTimeLimit } = await import("../rogue/modifiers.js");
+        if (hasTimePressure(rogueState.activeModifiers)) {
+            this.stageStartTime = Date.now();
+            this.startTimePressureTimer(getTimeLimit(rogueState.activeModifiers));
+        }
         
         // Update UI
         this.updateRogueUI();
@@ -94,6 +104,9 @@ export class RogueMode extends BaseModeHandler {
 
     checkWin(gameState) {
         if (gameState.currentPage === gameState.targetPage) {
+            // Stop timer if active
+            this.stopTimer();
+            
             // Calculate stage results
             const clicksUsed = rogueState.clicksAtStageStart - rogueState.clickBalance;
             rogueState.unusedClicksThisStage = rogueState.clickBalance;
@@ -126,7 +139,52 @@ export class RogueMode extends BaseModeHandler {
             rogueStats.classList.add("hidden");
         }
         
+        // Clear timer
+        this.stopTimer();
+        
         console.log("Rogue mode ended");
+    }
+
+    startTimePressureTimer(timeLimit) {
+        // Clear any existing timer
+        this.stopTimer();
+        
+        const timerDisplay = document.getElementById("timer-display");
+        const timerEl = document.getElementById("timer");
+        
+        if (timerDisplay && timerEl) {
+            timerDisplay.classList.remove("hidden");
+            
+            this.timerInterval = setInterval(() => {
+                const elapsed = (Date.now() - this.stageStartTime) / 1000;
+                const remaining = Math.max(0, timeLimit - elapsed);
+                
+                timerEl.textContent = remaining.toFixed(1) + "s";
+                
+                // Time's up
+                if (remaining <= 0) {
+                    this.stopTimer();
+                    this.handleTimeOut();
+                }
+            }, 100);
+        }
+    }
+
+    stopTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+        
+        const timerDisplay = document.getElementById("timer-display");
+        if (timerDisplay) {
+            timerDisplay.classList.add("hidden");
+        }
+    }
+
+    handleTimeOut() {
+        alert("Time's up! The stage has failed.");
+        this.endRun();
     }
 
     updateRogueUI() {
@@ -136,10 +194,12 @@ export class RogueMode extends BaseModeHandler {
             rogueStats.classList.remove("hidden");
         }
 
-        // Hide timer display (not used in rogue mode)
-        const timerDisplay = document.getElementById("timer-display");
-        if (timerDisplay) {
-            timerDisplay.classList.add("hidden");
+        // Only hide timer if it's not currently running
+        if (!this.timerInterval) {
+            const timerDisplay = document.getElementById("timer-display");
+            if (timerDisplay) {
+                timerDisplay.classList.add("hidden");
+            }
         }
 
         // Update stage number

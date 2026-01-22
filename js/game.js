@@ -70,7 +70,7 @@ export async function loadPage(title, isUserClick = true) {
     const page = await fetchPage(title);
     state.gameState.currentPage = page.title;
 
-    renderPageWithTransition(page);
+    await renderPageWithTransition(page);
 
     // Call gamemode's onPageLoad hook
     try {

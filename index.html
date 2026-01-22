@@ -29,6 +29,14 @@
                     <ul id="rogue-item-list"><li>None</li></ul>
                 </div>
             </div>
+            
+            <!-- Developer Controls -->
+            <div id="dev-controls" class="hidden">
+                <hr>
+                <p><strong style="color: #ff6b6b;">DEV MODE</strong></p>
+                <input type="text" id="dev-target-input" placeholder="Change target..." style="width: 100%; padding: 0.4rem; border-radius: 4px; border: 1px solid #555; background: #2a2a2a; color: #e0e0e0; font-size: 0.85rem;" />
+                <small style="color: #888; font-size: 0.75rem;">Press Enter to change target</small>
+            </div>
         </aside>
         <main id="main-content">
             <header>
@@ -230,4 +238,15 @@
     <script type="module" src="js/ui.js"></script>
     <script type="module" src="js/game.js"></script>
     <script src="js/langs.js"></script>
+    
+    <!-- Developer Mode (ignored by git) -->
+    <script type="module">
+        // Try to load dev mode if it exists
+        try {
+            const { initDevMode } = await import('./local/dev-mode.js');
+            initDevMode();
+        } catch (e) {
+            // Dev mode file doesn't exist, silently ignore
+        }
+    </script>
 </body>
