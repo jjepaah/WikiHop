@@ -112,6 +112,8 @@ h1, h2, h3 {
 .NavContent,
 th,
 td,
+#content .quotebox,
+#content .sidebar-list-title,
 #content .vertical-navbox,
 #content .metadata {
     background-color: #1e1e1e !important;
