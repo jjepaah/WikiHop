@@ -5,6 +5,7 @@ export const targetPools = {
     // Stages 1-3: Broad, well-known topics
     stage1_3: [
         "France", "Germany", "Japan", "Brazil", "Australia",
+        "Sweden", "Canada", "India", "Italy", "Mexico",
         "Basketball", "Football", "Tennis", "Swimming", "Chess",
         "Dog", "Cat", "Elephant", "Lion", "Eagle",
         "Pizza", "Chocolate", "Coffee", "Tea", "Rice",
