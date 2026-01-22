@@ -79,3 +79,16 @@ export function getRandomStartPage() {
     const pool = targetPools.stage1_3;
     return pool[Math.floor(Math.random() * pool.length)];
 }
+
+// Get start and target pages ensuring they are different
+export function getStartAndTarget(stageNumber) {
+    const startPage = getRandomStartPage();
+    let targetPage = getTargetForStage(stageNumber);
+    
+    // Keep getting a new target until it's different from start
+    while (targetPage === startPage) {
+        targetPage = getTargetForStage(stageNumber);
+    }
+    
+    return { startPage, targetPage };
+}

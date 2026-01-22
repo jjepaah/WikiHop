@@ -53,8 +53,12 @@ async function handleRogueStageComplete(winResult) {
 
 export async function loadPage(title, isUserClick = true) {
     if (isUserClick) {
-        state.gameState.clicks++;
-        ui.clickCounterEl.textContent = state.gameState.clicks;
+        // In Rogue mode, clicks are managed by the gamemode itself (countdown system)
+        // For other modes, increment click counter (count up system)
+        if (state.gameState.gamemode !== "rogue") {
+            state.gameState.clicks++;
+            ui.clickCounterEl.textContent = state.gameState.clicks;
+        }
 
         state.gameState.history.push(title);
     }
@@ -339,6 +343,7 @@ ui.startForm.addEventListener("submit", async e => {
     ui.startModal.style.display = "none";
 
     updateSidebar();
+    resetTargetInfo();
 
     loadPage(state.gameState.startPage, false);
 });
@@ -365,33 +370,42 @@ window.startGameFromParty = async function({ startPage, targetPage, wikiLang, mo
     ui.startModal.style.display = "none";
 
     updateSidebar();
+    resetTargetInfo();
 
     await loadPage(state.gameState.startPage, false);
 };
 
-let tooltipTimeout;
+// Target info expandable - click to toggle
+let targetInfoLoaded = false;
 
-ui.targetPageEl.addEventListener("mouseenter", async () => {
-    tooltipTimeout = setTimeout(async () => {
-        const firstParagraph = await fetchFirstParagraph(state.gameState.targetPage);
-        console.log("Fetched paragraph:", firstParagraph);
+ui.targetPageEl.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const isCollapsed = ui.tooltip.classList.contains("collapsed");
+    
+    if (!isCollapsed) {
+        // Collapse
+        ui.tooltip.classList.add("collapsed");
+    } else {
+        // Expand - load content if not already loaded
+        if (!targetInfoLoaded) {
+            const firstParagraph = await window.fetchFirstParagraph(state.gameState.targetPage);
+            console.log("Fetched first paragraph:", firstParagraph);
+            ui.tooltip.textContent = firstParagraph;
+            targetInfoLoaded = true;
+        }
         
-        ui.tooltip.textContent = firstParagraph;
-
-        const rect = ui.targetPageEl.getBoundingClientRect();
-        ui.tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
-        ui.tooltip.style.left = `${rect.left + window.scrollX}px`;
-
-        ui.tooltip.classList.add("visible");
-        ui.tooltip.classList.remove("hidden");
-    }, 200);
+        ui.tooltip.classList.remove("collapsed");
+    }
 });
 
-ui.targetPageEl.addEventListener("mouseleave", () => {
-    clearTimeout(tooltipTimeout);
-    ui.tooltip.classList.remove("visible");
-    ui.tooltip.classList.add("hidden");
-})
+// Reset target info when game state changes
+export function resetTargetInfo() {
+    targetInfoLoaded = false;
+    ui.tooltip.classList.add("collapsed");
+    ui.tooltip.textContent = "";
+}
 
 // Win screen button
 ui.newRoundBtn.addEventListener("click", () => {
@@ -400,6 +414,7 @@ ui.newRoundBtn.addEventListener("click", () => {
     state.gameState.clicks = 0;
     ui.clickCounterEl.textContent = 0;
     state.gameState.history = [];
+    resetTargetInfo();
     ui.startModal.style.display = "flex";
     // restore start/join buttons if they were hidden for a party host
     const startBtn = document.getElementById("start-game-btn");
@@ -451,6 +466,7 @@ ui.homeBtn.addEventListener("click", () => {
     state.gameState.clicks = 0;
     state.gameState.history = [];
     ui.clickCounterEl.textContent = 0;
+    resetTargetInfo();
 
     ui.winModal.classList.add("hidden");
     ui.startModal.style.display = "flex";
@@ -719,18 +735,22 @@ async function showShopModal() {
 
 async function startNewRogueStage() {
     const { rogueState } = await import("./rogue/rogueState.js");
-    const { getTargetForStage, getRandomStartPage } = await import("./rogue/targetPools.js");
+    const { getStartAndTarget } = await import("./rogue/targetPools.js");
     const currentMode = modeRegistry.getCurrentMode();
     
-    // Set new start and target
-    state.gameState.startPage = getRandomStartPage();
-    state.gameState.targetPage = getTargetForStage(rogueState.currentStage);
+    // Set new start and target (ensuring they're different)
+    const { startPage, targetPage } = getStartAndTarget(rogueState.currentStage);
+    state.gameState.startPage = startPage;
+    state.gameState.targetPage = targetPage;
     state.gameState.clicks = rogueState.clickBalance;
     state.gameState.history = [];
     state.gameState.startTime = Date.now();
     
     // Track starting clicks for new stage
     rogueState.clicksAtStageStart = rogueState.clickBalance;
+    
+    // Reset target info for new stage
+    resetTargetInfo();
     
     // Update UI
     currentMode.updateRogueUI();

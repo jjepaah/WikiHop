@@ -63,22 +63,35 @@ h1, h2, h3 {
     margin: 0.5rem 0;
 }
 
-.tooltip {
-    position: absolute;
-    max-width: 300px;
-    background: rgba(0,0,0,0.85);
-    color: #fff;
-    padding: 8px 12px;
+/* Target info expandable section */
+.target-info {
+    background: rgba(0,0,0,0.3);
     border-radius: 6px;
     font-size: 0.9rem;
-    pointer-events: none;
-    z-index: 2000;
-    transition: opacity 0.2s ease;
-    opacity: 0;
+    color: #b0b0b0;
+    line-height: 1.5;
+    overflow: hidden;
+    max-height: 500px;
+    opacity: 1;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+    transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease, margin-top 0.3s ease;
 }
 
-.tooltip.visible {
-    opacity: 1;
+.target-info.collapsed {
+    max-height: 0;
+    opacity: 0;
+    padding: 0 0.75rem;
+    margin-top: 0;
+}
+
+#target-page-wrapper {
+    cursor: pointer;
+    user-select: none;
+}
+
+#target-page-wrapper:hover {
+    opacity: 0.8;
 }
 
 /* Images */
@@ -793,16 +806,23 @@ a[style*="not-allowed"] {
 }
 
 .player-details {
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid #444;
     font-size: 0.85rem;
     color: #b0b0b0;
-    transition: all 0.3s ease;
+    overflow: hidden;
+    max-height: 300px;
+    opacity: 1;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid #444;
+    transition: max-height 0.3s ease, opacity 0.3s ease, padding-top 0.3s ease, margin-top 0.3s ease;
 }
 
-.player-details.hidden {
-    display: none;
+.player-details.collapsed {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    margin-top: 0;
+    border-top: 1px solid transparent;
 }
 
 .route-info {

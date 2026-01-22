@@ -10,7 +10,10 @@
             <p><strong id="click-counter-label">Clicks:</strong> <span id="click-counter">0</span></p>
             <p id="timer-display" class="hidden"><strong id="timer-label">Time:</strong> <span id="timer">0.00s</span></p>
             <p><strong id="start-page-label">Start:</strong> <span id="start-page">Loading...</span></p>
-            <p><strong id="target-page-label">Target:</strong> <span id="target-page">Loading...</span></p>
+            <div id="target-page-wrapper">
+                <p><strong id="target-page-label">Target:</strong> <span id="target-page">Loading...</span></p>
+                <div id="target-tooltip" class="target-info collapsed"></div>
+            </div>
             
             <!-- Rogue Mode Stats -->
             <div id="rogue-stats" class="hidden">
@@ -27,7 +30,6 @@
                 </div>
             </div>
         </aside>
-        <div id="target-tooltip" class="tooltip hidden"></div>
         <main id="main-content">
             <header>
                 <h1 id="page-title">Loading...</h1>

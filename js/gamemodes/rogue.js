@@ -1,6 +1,6 @@
 import { BaseModeHandler } from "./baseModeHandler.js";
 import { rogueState, resetRogueState, clearModifiers, clearVisitedPages } from "../rogue/rogueState.js";
-import { getTargetForStage, getRandomStartPage } from "../rogue/targetPools.js";
+import { getStartAndTarget } from "../rogue/targetPools.js";
 
 export class RogueMode extends BaseModeHandler {
     constructor() {
@@ -29,8 +29,9 @@ export class RogueMode extends BaseModeHandler {
         // Set initial game state
         gameState.mode = "individual";
         gameState.gamemode = "rogue";
-        gameState.startPage = getRandomStartPage();
-        gameState.targetPage = getTargetForStage(1);
+        const { startPage, targetPage } = getStartAndTarget(1);
+        gameState.startPage = startPage;
+        gameState.targetPage = targetPage;
         gameState.clicks = rogueState.clickBalance;
         gameState.history = [];
         gameState.startTime = Date.now();
@@ -58,8 +59,12 @@ export class RogueMode extends BaseModeHandler {
         // Update game state clicks from rogue balance
         gameState.clicks = rogueState.clickBalance;
         
-        // Check if run should end (out of clicks)
-        if (rogueState.clickBalance <= 0) {
+        // Check if reached target - do this BEFORE checking if out of clicks
+        // This allows the last click to win the stage and earn reward clicks
+        const reachedTarget = currentPage === gameState.targetPage;
+        
+        // Check if run should end (out of clicks) - but only if we haven't won
+        if (rogueState.clickBalance <= 0 && !reachedTarget) {
             // Check for Second Chance
             const { hasItem, removeItem } = await import("../rogue/rogueState.js");
             if (hasItem("secondChance")) {
