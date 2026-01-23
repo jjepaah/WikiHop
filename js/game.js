@@ -470,13 +470,13 @@ ui.newRoundBtn.addEventListener("click", () => {
         // No active gamemode, that's fine
     }
 
-    ui.winModal.classList.add("hidden");
+    hideModal(ui.winModal);
 
     state.gameState.clicks = 0;
     ui.clickCounterEl.textContent = 0;
     state.gameState.history = [];
     resetTargetInfo();
-    ui.startModal.style.display = "flex";
+    showModal(ui.startModal);
     // restore start/join buttons if they were hidden for a party host
     const startBtn = document.getElementById("start-game-btn");
     if (startBtn) startBtn.style.display = "";
