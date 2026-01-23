@@ -11,6 +11,22 @@ ui.targetPageEl.textContent = state.gameState.targetPage;
 ui.clickCounterEl.textContent = state.gameState.clicks;
 
 //----------------------------------------------
+// Modal Management
+//----------------------------------------------
+
+function showModal(modal) {
+    modal.classList.remove("hidden");
+    if (modal.style) modal.style.display = "";
+    document.body.classList.add("modal-open");
+}
+
+function hideModal(modal) {
+    modal.classList.add("hidden");
+    if (modal.style) modal.style.display = "none";
+    document.body.classList.remove("modal-open");
+}
+
+//----------------------------------------------
 // Rogue Mode Stage Handling
 //----------------------------------------------
 
@@ -40,7 +56,7 @@ async function handleRogueStageComplete(winResult) {
     document.getElementById("stage-clicks-earned").textContent = clickReward;
     document.getElementById("stage-score-earned").textContent = stageScore;
     
-    modal.classList.remove("hidden");
+    showModal(modal);
     disableAllLinks();
     
     // Update UI
@@ -93,22 +109,22 @@ async function checkWin() {
 
         // Call gamemode's checkWin to get result
         const currentMode = modeRegistry.getCurrentMode();
-        const winResult = await currentMode.checkWin(state.gameState);
+        const winResult = await currentMode.checkWin?.(state.gameState);
         
-        // If mode returns null, the win is not valid yet (e.g., Scenic Route requirement not met)
-        if (!winResult) {
+        // If mode explicitly returns null, the win is not valid yet (e.g., Scenic Route requirement not met)
+        if (winResult === null) {
             return;
         }
         
         // Handle rogue mode stage completion differently
-        if (winResult.isRogueStageComplete) {
+        if (winResult && winResult.isRogueStageComplete) {
             handleRogueStageComplete(winResult);
             return;
         }
 
         if (ui.winTitleEl) ui.winTitleEl.textContent = "You reached the target!";
         ui.finalClicksEl.textContent = state.gameState.clicks;
-        ui.winModal.classList.remove("hidden");
+        showModal(ui.winModal);
         disableAllLinks();
 
         state.gameState.endTime = Date.now();
@@ -135,20 +151,20 @@ async function checkWin() {
                 if (state.gameState.mode === "random") {
                     await saveRandomScore({
                         player,
-                        clicks: winResult.clicks,
-                        startPage: winResult.startPage,
-                        targetPage: winResult.targetPage,
-                        timeMs: winResult.timeMs
+                        clicks: onWinResult.clicks,
+                        startPage: onWinResult.startPage,
+                        targetPage: onWinResult.targetPage,
+                        timeMs: onWinResult.timeMs
                     });
                     const leaderboard = await getRandomLeaderboard();
                     console.log("Top 10 random scores:", leaderboard);
                 } else if (state.gameState.mode === "timed") {
                     await saveTimedScore({
                         player,
-                        clicks: winResult.clicks,
-                        startPage: winResult.startPage,
-                        targetPage: winResult.targetPage,
-                        timeLeft: winResult.timeLeft
+                        clicks: onWinResult.clicks,
+                        startPage: onWinResult.startPage,
+                        targetPage: onWinResult.targetPage,
+                        timeLeft: onWinResult.timeLeft
                     });
                     const leaderboard = await getTimedLeaderboard();
                     console.log("Top 10 timed scores:", leaderboard);
@@ -161,7 +177,7 @@ async function checkWin() {
             }
 
             // Handle teamwork notification
-            if (winResult.notifyOthers && state.gameState.mode === "party" && state.gameState.gamemode === "teamwork" && window.CURRENT_PARTY) {
+            if (onWinResult.notifyOthers && state.gameState.mode === "party" && state.gameState.gamemode === "teamwork" && window.CURRENT_PARTY) {
                 try {
                     const { markPartyAsFinished } = await import("./multiplayer.js");
                     await markPartyAsFinished(window.CURRENT_PARTY);
@@ -175,8 +191,8 @@ async function checkWin() {
                 try {
                     const { setCompetitionWinner } = await import("./multiplayer.js");
                     await setCompetitionWinner(window.CURRENT_PARTY, {
-                        clicks: winResult.clicks,
-                        timeMs: winResult.timeMs
+                        clicks: onWinResult.clicks,
+                        timeMs: onWinResult.timeMs
                     });
                 } catch (e) {
                     console.warn("Could not record competition winner:", e);
@@ -267,7 +283,7 @@ ui.startForm.addEventListener("submit", async e => {
         // Initialize directly without passing start/target
         await currentMode.initialize(state.gameState);
         
-        ui.startModal.style.display = "none";
+        hideModal(ui.startModal);
         loadPage(state.gameState.startPage, false);
         return; // Exit early for rogue mode
     } else if (modeId === "random" || isRandomWithTimed) {
@@ -354,7 +370,7 @@ ui.startForm.addEventListener("submit", async e => {
                 if (ui.winTitleEl) ui.winTitleEl.textContent = "Your time ran out";
                 ui.finalClicksEl.textContent = state.gameState.clicks;
                 ui.finalTimeEl.textContent = `${(timeLimitMinutes * 60).toFixed(2)}s`;
-                ui.winModal.classList.remove("hidden");
+                showModal(ui.winModal);
                 disableAllLinks();
                 // Clean up the gamemode
                 const currentMode = modeRegistry.getCurrentMode();
@@ -369,7 +385,7 @@ ui.startForm.addEventListener("submit", async e => {
     // For other modes, we don't need separate timer setup
 
     ui.clickCounterEl.textContent = 0;
-    ui.startModal.style.display = "none";
+    hideModal(ui.startModal);
 
     updateSidebar();
     resetTargetInfo();
@@ -396,7 +412,7 @@ window.startGameFromParty = async function({ startPage, targetPage, wikiLang, mo
     });
 
     ui.clickCounterEl.textContent = 0;
-    ui.startModal.style.display = "none";
+    hideModal(ui.startModal);
 
     updateSidebar();
     resetTargetInfo();
@@ -482,7 +498,7 @@ const continueStageBtn = document.getElementById("continue-stage-btn");
 if (continueStageBtn) {
     continueStageBtn.addEventListener("click", async () => {
         const modal = document.getElementById("stage-complete-modal");
-        modal.classList.add("hidden");
+        hideModal(modal);
         
         // Progress to next stage
         const currentMode = modeRegistry.getCurrentMode();
@@ -529,8 +545,8 @@ ui.homeBtn.addEventListener("click", () => {
     ui.clickCounterEl.textContent = 0;
     resetTargetInfo();
 
-    ui.winModal.classList.add("hidden");
-    ui.startModal.style.display = "flex";
+    hideModal(ui.winModal);
+    showModal(ui.startModal);
     // restore start/join buttons if they were hidden for a party host
     const startBtn2 = document.getElementById("start-game-btn");
     if (startBtn2) startBtn2.style.display = "";
@@ -631,7 +647,7 @@ async function showModifierSelectionModal() {
     selectedDifficulty = 0;
     
     // Show modal
-    modal.classList.remove("hidden");
+    showModal(modal);
     
     // Wait for confirmation
     return new Promise((resolve) => {
@@ -650,7 +666,7 @@ async function showModifierSelectionModal() {
             });
             
             // Hide modal
-            modal.classList.add("hidden");
+            hideModal(modal);
             
             // Remove event listener
             confirmBtn.removeEventListener("click", handler);
@@ -780,12 +796,12 @@ async function showShopModal() {
     rerollBtn.addEventListener("click", rerollHandler);
     
     // Show modal
-    modal.classList.remove("hidden");
+    showModal(modal);
     
     // Wait for close
     return new Promise((resolve) => {
         const closeHandler = () => {
-            modal.classList.add("hidden");
+            hideModal(modal);
             closeBtn.removeEventListener("click", closeHandler);
             rerollBtn.removeEventListener("click", rerollHandler);
             resolve();
