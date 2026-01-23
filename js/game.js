@@ -138,8 +138,12 @@ async function checkWin() {
         try {
             const onWinResult = await currentMode.onWin(state.gameState);
 
+            // Check if this is a challenge first (even if in set mode)
+            const challengeData = sessionStorage.getItem('challengeData');
+            const isChallenge = !!challengeData;
+
             // Handle gamemode-specific win logic
-            if (onWinResult.shouldSaveLeaderboard) {
+            if (onWinResult.shouldSaveLeaderboard || isChallenge) {
                 let player = window.getCurrentUsername();
                 
                 // If guest mode, prompt for username
@@ -147,25 +151,69 @@ async function checkWin() {
                     player = prompt("Enter your name for the leaderboard:") || "Anonymous";
                 }
                 
+                // Check if this is a challenge
+                let challengedFrom = null;
+                let entryIdToMark = null;
+                let challengeMode = null;
+                
+                console.log('Challenge data from session:', challengeData);
+                console.log('Current game state:', { mode: state.gameState.mode, startPage: state.gameState.startPage, targetPage: state.gameState.targetPage });
+                
+                if (challengeData) {
+                    try {
+                        const challenge = JSON.parse(challengeData);
+                        console.log('Parsed challenge:', challenge);
+                        // Verify this is the same route
+                        if (challenge.startPage === state.gameState.startPage && 
+                            challenge.targetPage === state.gameState.targetPage) {
+                            challengedFrom = challenge.originalPlayer;
+                            entryIdToMark = challenge.entryId;
+                            challengeMode = challenge.mode; // Store the original mode (random or timed)
+                            player = `${player} - challenge`;
+                            console.log('Challenge match confirmed, saving as:', player, 'to mode:', challengeMode);
+                        }
+                        // Clear the challenge data
+                        sessionStorage.removeItem('challengeData');
+                    } catch (e) {
+                        console.error("Error parsing challenge data:", e);
+                    }
+                }
+                
+                // Determine which mode to use for leaderboard saving
+                // If it's a challenge, use the challenge's original mode, otherwise use current mode
+                const leaderboardMode = challengeMode || state.gameState.mode;
+                
                 // Check if it's random or timed mode
-                if (state.gameState.mode === "random") {
+                if (leaderboardMode === "random") {
+                    console.log('Saving random mode challenge score');
                     await saveRandomScore({
                         player,
                         clicks: onWinResult.clicks,
-                        startPage: onWinResult.startPage,
-                        targetPage: onWinResult.targetPage,
-                        timeMs: onWinResult.timeMs
+                        startPage: state.gameState.startPage,
+                        targetPage: state.gameState.targetPage,
+                        timeMs: onWinResult.timeMs,
+                        wikiLang: window.getWikiLang ? window.getWikiLang() : "en",
+                        challengedFrom
                     });
+                    
+                    console.log('Challenge score saved successfully');
+                    
                     const leaderboard = await getRandomLeaderboard();
                     console.log("Top 10 random scores:", leaderboard);
-                } else if (state.gameState.mode === "timed") {
+                } else if (leaderboardMode === "timed") {
+                    console.log('Saving timed mode challenge score');
                     await saveTimedScore({
                         player,
                         clicks: onWinResult.clicks,
-                        startPage: onWinResult.startPage,
-                        targetPage: onWinResult.targetPage,
-                        timeLeft: onWinResult.timeLeft
+                        startPage: state.gameState.startPage,
+                        targetPage: state.gameState.targetPage,
+                        timeLeft: onWinResult.timeLeft,
+                        wikiLang: window.getWikiLang ? window.getWikiLang() : "en",
+                        challengedFrom
                     });
+                    
+                    console.log('Challenge score saved successfully');
+                    
                     const leaderboard = await getTimedLeaderboard();
                     console.log("Top 10 timed scores:", leaderboard);
                 }
@@ -390,6 +438,7 @@ ui.startForm.addEventListener("submit", async e => {
     updateSidebar();
     resetTargetInfo();
 
+    console.log('Starting game, loading page:', state.gameState.startPage);
     loadPage(state.gameState.startPage, false);
 });
 

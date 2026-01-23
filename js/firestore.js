@@ -166,7 +166,9 @@ window.saveRandomScore = async function({
     clicks,
     timeMs,
     startPage,
-    targetPage
+    targetPage,
+    wikiLang = "en",
+    challengedFrom = null
 }) {
     await addDoc(collection(db, "leaderboard_random"), {
     player,
@@ -174,6 +176,9 @@ window.saveRandomScore = async function({
     timeMs,
     startPage,
     targetPage,
+    wikiLang,
+    challengedFrom,
+    isChallenged: false,
     date: new Date()
     });
 }
@@ -181,7 +186,7 @@ window.saveRandomScore = async function({
 window.getRandomLeaderboard = async function() {
     const q = query(collection(db, "leaderboard_random"), orderBy("clicks", "asc"), limit(10));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => doc.data());
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
 
 window.saveTimedScore = async function({
@@ -189,7 +194,9 @@ window.saveTimedScore = async function({
     clicks,
     startPage,
     targetPage,
-    timeLeft
+    timeLeft,
+    wikiLang = "en",
+    challengedFrom = null
 }) {
     await addDoc(collection(db, "leaderboard_timed"), {
         player,
@@ -197,6 +204,9 @@ window.saveTimedScore = async function({
         startPage,
         targetPage,
         timeLeft,
+        wikiLang,
+        challengedFrom,
+        isChallenged: false,
         date: new Date()
     });
 }
@@ -204,5 +214,24 @@ window.saveTimedScore = async function({
 window.getTimedLeaderboard = async function() {
     const q = query(collection(db, "leaderboard_timed"), orderBy("timeLeft", "desc"), limit(10));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => doc.data());
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+
+// Check if user has already challenged a specific route
+window.hasUserChallengedRoute = async function(mode, player, startPage, targetPage) {
+    const collectionName = mode === "random" ? "leaderboard_random" : "leaderboard_timed";
+    const q = query(
+        collection(db, collectionName),
+        where("player", "==", `${player} - challenge`),
+        where("startPage", "==", startPage),
+        where("targetPage", "==", targetPage)
+    );
+    const snapshot = await getDocs(q);
+    return !snapshot.empty;
+}
+
+// Mark an entry as challenged
+window.markEntryChallenged = async function(mode, entryId) {
+    const collectionName = mode === "random" ? "leaderboard_random" : "leaderboard_timed";
+    await setDoc(doc(db, collectionName, entryId), { isChallenged: true }, { merge: true });
 }

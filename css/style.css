@@ -845,6 +845,33 @@ a[style*="not-allowed"] {
     margin-right: 0.3rem;
 }
 
+/* Challenge button styling */
+.challenge-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    transition: background-color 0.2s ease;
+}
+
+.challenge-btn:hover {
+    background-color: #45a049;
+}
+
+.challenge-info {
+    color: #4CAF50;
+    font-style: italic;
+}
+
+.challenged-badge {
+    color: #FFC107;
+    font-weight: 500;
+}
+
 .leaderboard-table th:first-child,
 .leaderboard-table td:first-child {
     width: 50px;
