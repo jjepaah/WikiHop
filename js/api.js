@@ -81,10 +81,31 @@ async function fetchFirstParagraph(title) {
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = data.parse.text["*"];
 
-    const firstP = tempDiv.querySelector("p");
-    if (!firstP) return "No preview available.";
+    // Remove unwanted elements before searching for paragraphs
+    tempDiv.querySelectorAll("style, script, .IPA, .reference, sup.reference, .mw-editsection").forEach(el => el.remove());
 
-    firstP.querySelectorAll("style, .IPA").forEach(el => el.remove());
+    // Get all paragraphs
+    const paragraphs = tempDiv.querySelectorAll("p");
+    
+    // Find the first substantial paragraph (at least 50 characters of actual text)
+    for (const p of paragraphs) {
+        // Remove reference links like [1], [2], etc.
+        let text = p.textContent
+            .replace(/\[\d+\]/g, '') // Remove citation numbers [1], [2]
+            .replace(/\[.*?\]/g, '')  // Remove other brackets
+            .trim();
+        
+        // Check if text is long enough
+        if (text.length > 50) {
+            // Limit to first 3 sentences (count periods followed by space or end of string)
+            const sentences = text.match(/[^.!?]+[.!?]+/g);
+            if (sentences && sentences.length > 3) {
+                text = sentences.slice(0, 3).join('').trim();
+            }
+            
+            return text;
+        }
+    }
 
-    return firstP.textContent.trim();
+    return "No preview available.";
 }

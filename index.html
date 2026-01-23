@@ -1,8 +1,12 @@
 <!DOCTYPE html>
-<body>
+<head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WikiHop</title>
     <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/mobile.css" />
+</head>
+<body>
 
     <div id="game-container">
         <aside id="sidebar">
@@ -10,9 +14,34 @@
             <p><strong id="click-counter-label">Clicks:</strong> <span id="click-counter">0</span></p>
             <p id="timer-display" class="hidden"><strong id="timer-label">Time:</strong> <span id="timer">0.00s</span></p>
             <p><strong id="start-page-label">Start:</strong> <span id="start-page">Loading...</span></p>
-            <p><strong id="target-page-label">Target:</strong> <span id="target-page">Loading...</span></p>
+            <div id="target-page-wrapper">
+                <p><strong id="target-page-label">Target:</strong> <span id="target-page">Loading...</span></p>
+                <div id="target-tooltip" class="target-info collapsed"></div>
+            </div>
+            
+            <!-- Rogue Mode Stats -->
+            <div id="rogue-stats" class="hidden">
+                <hr>
+                <p><strong>Stage:</strong> <span id="rogue-stage">1</span></p>
+                <p><strong>Score:</strong> <span id="rogue-score">0</span> (<span id="rogue-wikipoints">0</span> WP)</p>
+                <div id="rogue-modifiers">
+                    <strong>Modifiers:</strong>
+                    <ul id="rogue-modifier-list"><li>None</li></ul>
+                </div>
+                <div id="rogue-items">
+                    <strong>Items:</strong>
+                    <ul id="rogue-item-list"><li>None</li></ul>
+                </div>
+            </div>
+            
+            <!-- Developer Controls -->
+            <div id="dev-controls" class="hidden">
+                <hr>
+                <p><strong style="color: #ff6b6b;">DEV MODE</strong></p>
+                <input type="text" id="dev-target-input" placeholder="Change target..." style="width: 100%; padding: 0.4rem; border-radius: 4px; border: 1px solid #555; background: #2a2a2a; color: #e0e0e0; font-size: 0.85rem;" />
+                <small style="color: #888; font-size: 0.75rem;">Press Enter to change target</small>
+            </div>
         </aside>
-        <div id="target-tooltip" class="tooltip hidden"></div>
         <main id="main-content">
             <header>
                 <h1 id="page-title">Loading...</h1>
@@ -81,8 +110,13 @@
                             <option value="set">Set Run</option>
                             <option value="random" selected>Random</option>
                             <option value="timed">Time Attack</option>
+                            <option value="rogue">Rogue (Beta)</option>
                         </select>
                     </div>
+                </div>
+                <div id="random-timed-section" class="random-timed-section" style="display: flex; align-items: center; justify-content: center; width: fit-content; margin: 0 auto;">
+                    <input type="checkbox" id="random-timed-checkbox" style="margin: 0; padding: 0;" />
+                    <label for="random-timed-checkbox" style="margin: 0; padding: 0; margin-left: 4px; white-space: nowrap; vertical-align: middle; line-height: 1;">Time Attack (5 min)</label>
                 </div>
                 <div id="time-limit-section" class="time-limit-section hidden">
                     <div class="dropdowns-container">
@@ -155,7 +189,49 @@
             <h2 id="win-title">You reached the target!</h2>
             <p>Clicks: <span id="final-clicks">0</span></p>
             <p>Time: <span id="final-time">0</span></p>
-            <button id="new-round-btn">Start New Round</button>
+            <button id="new-round-btn">Back to Menu</button>
+        </div>
+    </div>
+
+    <!-- Rogue Mode: Stage Complete Modal -->
+    <div id="stage-complete-modal" class="hidden">
+        <div class="modal-box">
+            <h2>Stage Complete!</h2>
+            <p><strong>Stage:</strong> <span id="stage-complete-number">1</span></p>
+            <p><strong>Clicks used:</strong> <span id="stage-clicks-used">0</span></p>
+            <p><strong>Clicks remaining:</strong> <span id="stage-clicks-remaining">0</span></p>
+            <p><strong>Clicks earned:</strong> +<span id="stage-clicks-earned">0</span></p>
+            <p><strong>Score earned:</strong> +<span id="stage-score-earned">0</span></p>
+            <button id="continue-stage-btn">Continue</button>
+        </div>
+    </div>
+
+    <!-- Rogue Mode: Modifier Selection Modal -->
+    <div id="modifier-selection-modal" class="hidden">
+        <div class="modal-box">
+            <h2>Choose Difficulty</h2>
+            <p class="modifier-intro">Select how many modifiers to activate. More modifiers = more clicks earned!</p>
+            <p><strong>Current clicks:</strong> <span id="modifier-clicks-display">0</span></p>
+            <div id="modifier-options" class="modifier-options">
+                <!-- Dynamically populated -->
+            </div>
+            <button id="confirm-modifiers-btn" class="primary-btn">Start Stage</button>
+        </div>
+    </div>
+
+    <!-- Rogue Mode: Shop Modal -->
+    <div id="shop-modal" class="hidden">
+        <div class="modal-box">
+            <h2>Shop</h2>
+            <p class="shop-intro">Purchase items and upgrades to help you survive longer</p>
+            <p><strong>Clicks available:</strong> <span id="shop-clicks-display">0</span></p>
+            <div id="shop-items" class="shop-items">
+                <!-- Dynamically populated -->
+            </div>
+            <div class="shop-actions">
+                <button id="reroll-shop-btn" class="secondary-btn">Reroll (4 clicks)</button>
+                <button id="close-shop-btn" class="primary-btn">Continue</button>
+            </div>
         </div>
     </div>
 
@@ -170,4 +246,15 @@
     <script type="module" src="js/ui.js"></script>
     <script type="module" src="js/game.js"></script>
     <script src="js/langs.js"></script>
+    
+    <!-- Developer Mode (ignored by git) -->
+    <script type="module">
+        // Try to load dev mode if it exists
+        try {
+            const { initDevMode } = await import('./local/dev-mode.js');
+            initDevMode();
+        } catch (e) {
+            // Dev mode file doesn't exist, silently ignore
+        }
+    </script>
 </body>

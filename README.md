@@ -1,6 +1,6 @@
 # WikiHop
 
-Play at https://jepsu.fi/WikiHop
+Play at [Jepsu](https://jepsu.fi/WikiHop)
 
 A forward-only Wikipedia navigation game.
 

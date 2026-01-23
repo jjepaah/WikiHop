@@ -3,6 +3,7 @@ import { RandomMode } from "./random.js";
 import { TimedMode } from "./timed.js";
 import { TeamworkMode } from "./teamwork.js";
 import { CompetitionMode } from "./competition.js";
+import { RogueMode } from "./rogue.js";
 
 /**
  * Mode Registry
@@ -24,6 +25,7 @@ export class ModeRegistry {
         this.register(new SetRunMode());
         this.register(new RandomMode());
         this.register(new TimedMode());
+        this.register(new RogueMode());
 
         // Multiplayer modes
         this.register(new TeamworkMode());

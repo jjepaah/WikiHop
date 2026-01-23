@@ -30,7 +30,7 @@ async function loadLeaderboard(mode = 'random') {
                 html += `<td>${index + 1}</td>`;
                 html += `<td class="player-cell">`;
                 html += `<div class="player-name">${score.player || 'Anonymous'}</div>`;
-                html += `<div class="player-details hidden">`;
+                html += `<div class="player-details collapsed">`;
                 html += `<div class="route-info"><strong>Start:</strong> ${score.startPage || 'N/A'}</div>`;
                 html += `<div class="route-info"><strong>Target:</strong> ${score.targetPage || 'N/A'}</div>`;
                 html += `</div>`;
@@ -49,7 +49,7 @@ async function loadLeaderboard(mode = 'random') {
                 html += `<td>${index + 1}</td>`;
                 html += `<td class="player-cell">`;
                 html += `<div class="player-name">${score.player || 'Anonymous'}</div>`;
-                html += `<div class="player-details hidden">`;
+                html += `<div class="player-details collapsed">`;
                 html += `<div class="route-info"><strong>Start:</strong> ${score.startPage || 'N/A'}</div>`;
                 html += `<div class="route-info"><strong>Target:</strong> ${score.targetPage || 'N/A'}</div>`;
                 html += `</div>`;
@@ -67,16 +67,18 @@ async function loadLeaderboard(mode = 'random') {
         document.querySelectorAll('.leaderboard-row').forEach(row => {
             row.addEventListener('click', function() {
                 const details = this.querySelector('.player-details');
-                const wasExpanded = !details.classList.contains('hidden');
+                const wasExpanded = !details.classList.contains('collapsed');
                 
                 // Close all other expanded rows
-                document.querySelectorAll('.player-details').forEach(d => d.classList.add('hidden'));
+                document.querySelectorAll('.player-details').forEach(d => {
+                    d.classList.add('collapsed');
+                });
                 document.querySelectorAll('.leaderboard-row').forEach(r => r.classList.remove('expanded'));
                 
                 // Toggle this row
                 if (!wasExpanded) {
-                    details.classList.remove('hidden');
                     this.classList.add('expanded');
+                    details.classList.remove('collapsed');
                 }
             });
         });

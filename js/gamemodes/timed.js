@@ -45,7 +45,7 @@ export class TimedMode extends BaseModeHandler {
         gameState.targetPage = targetPage;
         gameState.clicks = 0;
         gameState.history = [];
-        gameState.startTime = Date.now();
+        gameState.startTime = Date.now(); // Start the timer when game initializes
         gameState.endTime = null;
         gameState.partyCode = null;
 
